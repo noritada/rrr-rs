@@ -21,19 +21,44 @@ impl Field {
         }
     }
 
-    fn skip(&self, buf: &[u8], pos: &mut usize) {
+    fn read_str<'a>(&self, buf: &'a [u8], pos: &mut usize) -> Result<&'a [u8], Error> {
+        let start = *pos;
+        self.skip_str(buf, pos)?;
+        let string = &buf[start..(*pos - 1)]; // remove trailing b'\0'
+        Ok(string)
+    }
+
+    fn read_nstr<'a>(
+        &self,
+        buf: &'a [u8],
+        pos: &mut usize,
+        size: usize,
+    ) -> Result<&'a [u8], Error> {
+        let start = *pos;
+        *pos += size;
+        let string = &buf[start..*pos];
+        Ok(string)
+    }
+
+    fn skip(&self, buf: &[u8], pos: &mut usize) -> Result<(), Error> {
         match self.size() {
-            Size::Known(size) => *pos += size,
-            Size::Unknown => {
-                for b in &buf[*pos..] {
-                    *pos += 1;
-                    if *b == b'\0' {
-                        break;
-                    }
-                }
+            Size::Known(size) => {
+                *pos += size;
+                Ok(())
             }
-            Size::Undefined => {} // not expected
+            Size::Unknown => self.skip_str(buf, pos),
+            Size::Undefined => unimplemented!(), // not expected
         }
+    }
+
+    fn skip_str(&self, buf: &[u8], pos: &mut usize) -> Result<(), Error> {
+        for b in &buf[*pos..] {
+            *pos += 1;
+            if *b == b'\0' {
+                return Ok(());
+            }
+        }
+        Err(Error)
     }
 }
 
@@ -58,9 +83,9 @@ enum Size {
     Undefined,
 }
 
-fn visit<F>(field: &Field, f: &mut F)
+fn visit<F>(field: &Field, f: &mut F) -> Result<(), Error>
 where
-    F: FnMut(&Field) -> (),
+    F: FnMut(&Field) -> Result<(), Error>,
 {
     match field {
         Field {
@@ -68,7 +93,7 @@ where
             name: _,
         } => {
             for member in members.iter() {
-                visit(member, f);
+                visit(member, f)?;
             }
         }
         Field {
@@ -77,11 +102,27 @@ where
         } => {
             for _ in 0..(*len) {
                 for member in element.iter() {
-                    visit(member, f);
+                    visit(member, f)?;
                 }
             }
         }
-        _ => f(field),
+        _ => f(field)?,
+    }
+    Ok(())
+}
+
+#[derive(Debug, Clone)]
+struct Error;
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "error in processing data")
+    }
+}
+
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        None
     }
 }
 
@@ -196,21 +237,53 @@ mod tests {
     }
 
     #[test]
-    fn visitor_basic_functionality() {
-        let ast = ast_without_str();
-
-        let mut pos = 0;
-        let mut inc_pos = |field: &Field| match field.size() {
-            Size::Known(size) => pos += size,
-            Size::Unknown => unimplemented!(),
-            Size::Undefined => unreachable!(),
+    fn field_read_str() -> Result<(), Box<dyn std::error::Error>> {
+        let ast = Field {
+            name: "s".to_owned(),
+            kind: FieldKind::Str,
         };
-        visit(&ast, &mut inc_pos);
-        assert_eq!(pos, 52)
+
+        let buf = vec![0x00, 0x00, 0x54, 0x4f, 0x4b, 0x59, 0x4f, 0x00, 0x00, 0x00];
+        let mut pos = 2;
+        let result = ast.read_str(&buf, &mut pos)?;
+        assert_eq!(result, "TOKYO".as_bytes());
+        Ok(())
     }
 
     #[test]
-    fn visitor_skip() {
+    fn field_read_nstr() -> Result<(), Box<dyn std::error::Error>> {
+        let ast = Field {
+            name: "s".to_owned(),
+            kind: FieldKind::NStr(4),
+        };
+
+        let buf = vec![0x00, 0x00, 0x54, 0x4f, 0x4b, 0x00, 0x00, 0x00];
+        let mut pos = 2;
+        let result = ast.read_nstr(&buf, &mut pos, 4)?;
+        assert_eq!(result, "TOK\x00".as_bytes());
+        Ok(())
+    }
+
+    #[test]
+    fn visitor_basic_functionality() -> Result<(), Box<dyn std::error::Error>> {
+        let ast = ast_without_str();
+
+        let mut pos = 0;
+        let mut inc_pos = |field: &Field| -> Result<(), Error> {
+            match field.size() {
+                Size::Known(size) => pos += size,
+                Size::Unknown => unimplemented!(),
+                Size::Undefined => unreachable!(),
+            };
+            Ok(())
+        };
+        visit(&ast, &mut inc_pos)?;
+        assert_eq!(pos, 52);
+        Ok(())
+    }
+
+    #[test]
+    fn visitor_skip() -> Result<(), Box<dyn std::error::Error>> {
         let ast = ast_with_str();
 
         let buf = vec![
@@ -222,7 +295,8 @@ mod tests {
         ];
         let mut pos = 0;
         let mut skip = |field: &Field| field.skip(&buf, &mut pos);
-        visit(&ast, &mut skip);
-        assert_eq!(pos, 63)
+        visit(&ast, &mut skip)?;
+        assert_eq!(pos, 63);
+        Ok(())
     }
 }
