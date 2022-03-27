@@ -3,6 +3,25 @@ struct Field {
     name: String,
 }
 
+impl Field {
+    fn size(&self) -> Size {
+        match self.kind {
+            FieldKind::Int8 => Size::Known(std::mem::size_of::<i8>()),
+            FieldKind::Int16 => Size::Known(std::mem::size_of::<i16>()),
+            FieldKind::Int32 => Size::Known(std::mem::size_of::<i32>()),
+            FieldKind::UInt8 => Size::Known(std::mem::size_of::<u8>()),
+            FieldKind::UInt16 => Size::Known(std::mem::size_of::<u16>()),
+            FieldKind::UInt32 => Size::Known(std::mem::size_of::<u32>()),
+            FieldKind::Float32 => Size::Known(std::mem::size_of::<f32>()),
+            FieldKind::Float64 => Size::Known(std::mem::size_of::<f64>()),
+            FieldKind::Str => Size::Unknown,
+            FieldKind::NStr(size) => Size::Known(size),
+            FieldKind::Struct { .. } => Size::Undefined,
+            FieldKind::Array { .. } => Size::Undefined,
+        }
+    }
+}
+
 enum FieldKind {
     Int8,
     Int16,
@@ -16,6 +35,12 @@ enum FieldKind {
     NStr(usize),
     Struct { members: Vec<Field> },
     Array { len: usize, element: Vec<Field> },
+}
+
+enum Size {
+    Known(usize),
+    Unknown,
+    Undefined,
 }
 
 fn visit<F>(field: &Field, f: &mut F)
@@ -103,61 +128,10 @@ mod tests {
         };
 
         let mut pos = 0;
-        let mut inc_pos = |field: &Field| match field {
-            Field {
-                kind: FieldKind::Int8,
-                ..
-            } => pos += std::mem::size_of::<i8>(),
-            Field {
-                kind: FieldKind::Int16,
-                ..
-            } => pos += std::mem::size_of::<i16>(),
-            Field {
-                kind: FieldKind::Int32,
-                ..
-            } => pos += std::mem::size_of::<i32>(),
-            Field {
-                kind: FieldKind::UInt8,
-                ..
-            } => pos += std::mem::size_of::<u8>(),
-            Field {
-                kind: FieldKind::UInt16,
-                ..
-            } => pos += std::mem::size_of::<u16>(),
-            Field {
-                kind: FieldKind::UInt32,
-                ..
-            } => pos += std::mem::size_of::<u32>(),
-            Field {
-                kind: FieldKind::Float32,
-                ..
-            } => pos += std::mem::size_of::<f32>(),
-            Field {
-                kind: FieldKind::Float64,
-                ..
-            } => pos += std::mem::size_of::<f64>(),
-            Field {
-                kind: FieldKind::NStr(size),
-                ..
-            } => pos += size,
-            Field {
-                kind: FieldKind::Str,
-                ..
-            } => {
-                unimplemented!();
-            }
-            Field {
-                kind: FieldKind::Struct { .. },
-                ..
-            } => {
-                unreachable!();
-            }
-            Field {
-                kind: FieldKind::Array { .. },
-                ..
-            } => {
-                unreachable!();
-            }
+        let mut inc_pos = |field: &Field| match field.size() {
+            Size::Known(size) => pos += size,
+            Size::Unknown => unimplemented!(),
+            Size::Undefined => unreachable!(),
         };
         visit(&ast, &mut inc_pos);
         assert_eq!(pos, 52)
