@@ -20,6 +20,21 @@ impl Field {
             FieldKind::Array { .. } => Size::Undefined,
         }
     }
+
+    fn skip(&self, buf: &[u8], pos: &mut usize) {
+        match self.size() {
+            Size::Known(size) => *pos += size,
+            Size::Unknown => {
+                for b in &buf[*pos..] {
+                    *pos += 1;
+                    if *b == b'\0' {
+                        break;
+                    }
+                }
+            }
+            Size::Undefined => {} // not expected
+        }
+    }
 }
 
 enum FieldKind {
@@ -74,9 +89,8 @@ where
 mod tests {
     use super::*;
 
-    #[test]
-    fn visitor() {
-        let ast = Field {
+    fn ast_without_str() -> Field {
+        Field {
             name: "".to_owned(),
             kind: FieldKind::Struct {
                 members: vec![
@@ -125,7 +139,65 @@ mod tests {
                     },
                 ],
             },
-        };
+        }
+    }
+
+    fn ast_with_str() -> Field {
+        Field {
+            name: "".to_owned(),
+            kind: FieldKind::Struct {
+                members: vec![
+                    Field {
+                        name: "date".to_owned(),
+                        kind: FieldKind::Struct {
+                            members: vec![
+                                Field {
+                                    name: "year".to_owned(),
+                                    kind: FieldKind::UInt16,
+                                },
+                                Field {
+                                    name: "month".to_owned(),
+                                    kind: FieldKind::UInt8,
+                                },
+                                Field {
+                                    name: "day".to_owned(),
+                                    kind: FieldKind::UInt8,
+                                },
+                            ],
+                        },
+                    },
+                    Field {
+                        name: "data".to_owned(),
+                        kind: FieldKind::Array {
+                            len: 4,
+                            element: vec![
+                                Field {
+                                    name: "loc".to_owned(),
+                                    kind: FieldKind::Str,
+                                },
+                                Field {
+                                    name: "temp".to_owned(),
+                                    kind: FieldKind::Int16,
+                                },
+                                Field {
+                                    name: "rhum".to_owned(),
+                                    kind: FieldKind::UInt16,
+                                },
+                            ],
+                        },
+                    },
+                    Field {
+                        name: "comment".to_owned(),
+                        kind: FieldKind::NStr(16),
+                    },
+                ],
+            },
+        }
+    }
+
+    #[test]
+    fn visitor_basic_functionality() {
+        let ast = ast_without_str();
 
         let mut pos = 0;
         let mut inc_pos = |field: &Field| match field.size() {
@@ -135,5 +207,22 @@ mod tests {
         };
         visit(&ast, &mut inc_pos);
         assert_eq!(pos, 52)
+    }
+
+    #[test]
+    fn visitor_skip() {
+        let ast = ast_with_str();
+
+        let buf = vec![
+            0x07, 0xe6, 0x01, 0x01, 0x54, 0x4f, 0x4b, 0x59, 0x4f, 0x00, 0x00, 0x64, 0x00, 0x0a,
+            0x4f, 0x53, 0x41, 0x4b, 0x41, 0x00, 0x00, 0x64, 0x00, 0x0a, 0x4e, 0x41, 0x47, 0x4f,
+            0x59, 0x41, 0x00, 0x00, 0x64, 0x00, 0x0a, 0x46, 0x55, 0x4b, 0x55, 0x4f, 0x4b, 0x41,
+            0x00, 0x00, 0x64, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ];
+        let mut pos = 0;
+        let mut skip = |field: &Field| field.skip(&buf, &mut pos);
+        visit(&ast, &mut skip);
+        assert_eq!(pos, 63)
     }
 }
