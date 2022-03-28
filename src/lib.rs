@@ -1,3 +1,6 @@
+mod utils;
+use crate::utils::FromBytes;
+
 struct Field {
     kind: FieldKind,
     name: String,
@@ -19,6 +22,19 @@ impl Field {
             FieldKind::Struct { .. } => Size::Undefined,
             FieldKind::Array { .. } => Size::Undefined,
         }
+    }
+
+    fn read_number<N>(&self, buf: &[u8], pos: &mut usize) -> Result<N, Error>
+    where
+        N: FromBytes,
+    {
+        let start = *pos;
+        *pos += std::mem::size_of::<N>();
+        if *pos > (*buf).len() {
+            return Err(Error);
+        }
+        let val = FromBytes::from_be_bytes(&buf[start..*pos]);
+        Ok(val)
     }
 
     fn read_str<'a>(&self, buf: &'a [u8], pos: &mut usize) -> Result<&'a [u8], Error> {
@@ -234,6 +250,120 @@ mod tests {
                 ],
             },
         }
+    }
+
+    #[test]
+    fn field_read_i8() -> Result<(), Box<dyn std::error::Error>> {
+        let ast = Field {
+            name: "dummy".to_owned(),
+            kind: FieldKind::Int8,
+        };
+
+        let buf = vec![0x00, 0x00, 0xfe, 0x00, 0x00];
+        let mut pos = 2;
+        let result = ast.read_number::<i8>(&buf, &mut pos)?;
+        assert_eq!(result, -2);
+        Ok(())
+    }
+
+    #[test]
+    fn field_read_i16() -> Result<(), Box<dyn std::error::Error>> {
+        let ast = Field {
+            name: "dummy".to_owned(),
+            kind: FieldKind::Int16,
+        };
+
+        let buf = vec![0x00, 0x00, 0xfe, 0xdc, 0x00, 0x00];
+        let mut pos = 2;
+        let result = ast.read_number::<i16>(&buf, &mut pos)?;
+        assert_eq!(result, -292);
+        Ok(())
+    }
+
+    #[test]
+    fn field_read_i32() -> Result<(), Box<dyn std::error::Error>> {
+        let ast = Field {
+            name: "dummy".to_owned(),
+            kind: FieldKind::Int32,
+        };
+
+        let buf = vec![0x00, 0x00, 0xfe, 0xdc, 0xba, 0x98, 0x00];
+        let mut pos = 2;
+        let result = ast.read_number::<i32>(&buf, &mut pos)?;
+        assert_eq!(result, -19088744);
+        Ok(())
+    }
+
+    #[test]
+    fn field_read_u8() -> Result<(), Box<dyn std::error::Error>> {
+        let ast = Field {
+            name: "dummy".to_owned(),
+            kind: FieldKind::UInt8,
+        };
+
+        let buf = vec![0x00, 0x00, 0xfe, 0x00, 0x00];
+        let mut pos = 2;
+        let result = ast.read_number::<u8>(&buf, &mut pos)?;
+        assert_eq!(result, 254);
+        Ok(())
+    }
+
+    #[test]
+    fn field_read_u16() -> Result<(), Box<dyn std::error::Error>> {
+        let ast = Field {
+            name: "dummy".to_owned(),
+            kind: FieldKind::UInt16,
+        };
+
+        let buf = vec![0x00, 0x00, 0xfe, 0xdc, 0x00, 0x00];
+        let mut pos = 2;
+        let result = ast.read_number::<u16>(&buf, &mut pos)?;
+        assert_eq!(result, 65244);
+        Ok(())
+    }
+
+    #[test]
+    fn field_read_u32() -> Result<(), Box<dyn std::error::Error>> {
+        let ast = Field {
+            name: "dummy".to_owned(),
+            kind: FieldKind::UInt32,
+        };
+
+        let buf = vec![0x00, 0x00, 0xfe, 0xdc, 0xba, 0x98, 0x00, 0x00];
+        let mut pos = 2;
+        let result = ast.read_number::<u32>(&buf, &mut pos)?;
+        assert_eq!(result, 4275878552);
+        Ok(())
+    }
+
+    #[test]
+    fn field_read_f32() -> Result<(), Box<dyn std::error::Error>> {
+        let ast = Field {
+            name: "dummy".to_owned(),
+            kind: FieldKind::Float32,
+        };
+
+        let buf = vec![0x00, 0x00, 0xbf, 0x80, 0x00, 0x00, 0x00, 0x00];
+        let mut pos = 2;
+        let result = ast.read_number::<f32>(&buf, &mut pos)?;
+        assert_eq!(result, -1.0);
+        Ok(())
+    }
+
+    #[test]
+    fn field_read_f64() -> Result<(), Box<dyn std::error::Error>> {
+        let ast = Field {
+            name: "dummy".to_owned(),
+            kind: FieldKind::Float32,
+        };
+
+        let buf = vec![
+            0x00, 0x00, 0xbf, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ];
+        let mut pos = 2;
+        let result = ast.read_number::<f64>(&buf, &mut pos)?;
+        assert_eq!(result, -1.0);
+        Ok(())
     }
 
     #[test]
