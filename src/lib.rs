@@ -47,9 +47,9 @@ enum Size {
     Undefined,
 }
 
-fn visit<F>(field: &Field, f: &mut F) -> Result<(), Error>
+fn visit<'f, F>(field: &'f Field, f: &mut F) -> Result<(), Error>
 where
-    F: FnMut(&Field) -> Result<(), Error>,
+    F: FnMut(&'f Field) -> Result<(), Error>,
 {
     match field {
         Field {
