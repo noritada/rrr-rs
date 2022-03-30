@@ -75,7 +75,7 @@ where
     Ok(())
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 struct Error;
 
 impl std::fmt::Display for Error {
