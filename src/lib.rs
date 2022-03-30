@@ -47,17 +47,19 @@ enum Size {
     Undefined,
 }
 
-fn visit<'f, F>(field: &'f Field, f: &mut F) -> Result<(), Error>
+fn visit<'f, F, G>(field: &'f Field, start_f: &mut F, end_f: &mut G) -> Result<(), Error>
 where
     F: FnMut(&'f Field) -> Result<(), Error>,
+    G: FnMut(&'f Field) -> Result<(), Error>,
 {
+    start_f(field)?;
     match field {
         Field {
             kind: FieldKind::Struct { members },
             name: _,
         } => {
             for member in members.iter() {
-                visit(member, f)?;
+                visit(member, start_f, end_f)?;
             }
         }
         Field {
@@ -66,12 +68,13 @@ where
         } => {
             for _ in 0..(*len) {
                 for member in element.iter() {
-                    visit(member, f)?;
+                    visit(member, start_f, end_f)?;
                 }
             }
         }
-        _ => f(field)?,
+        _ => {}
     }
+    end_f(field)?;
     Ok(())
 }
 
@@ -211,11 +214,11 @@ mod tests {
             match field.size() {
                 Size::Known(size) => pos += size,
                 Size::Unknown => unimplemented!(),
-                Size::Undefined => unreachable!(),
+                Size::Undefined => {}
             };
             Ok(())
         };
-        visit(&ast, &mut inc_pos)?;
+        visit(&ast, &mut inc_pos, &mut |_| Ok(()))?;
         assert_eq!(pos, 52);
         Ok(())
     }
@@ -234,11 +237,16 @@ mod tests {
         let mut walker = Walker::new(buf.as_slice());
         let mut vec = Vec::new();
         let mut read = |field: &Field| {
-            let value = walker.read(field)?;
-            vec.push(value);
+            if !matches!(
+                field.kind,
+                FieldKind::Struct { .. } | FieldKind::Array { .. }
+            ) {
+                let value = walker.read(field)?;
+                vec.push(value);
+            }
             Ok(())
         };
-        visit(&ast, &mut read)?;
+        visit(&ast, &mut read, &mut |_| Ok(()))?;
         assert_eq!(walker.pos(), 63);
         assert_eq!(
             vec,
@@ -277,7 +285,7 @@ mod tests {
         ];
         let mut walker = Walker::new(buf.as_slice());
         let mut skip = |field: &Field| walker.skip(field);
-        visit(&ast, &mut skip)?;
+        visit(&ast, &mut skip, &mut |_| Ok(()))?;
         assert_eq!(walker.pos(), 63);
         Ok(())
     }

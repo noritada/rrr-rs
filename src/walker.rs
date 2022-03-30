@@ -74,7 +74,7 @@ impl<'w> Walker<'w> {
                 Ok(())
             }
             Size::Unknown => self.skip_str(),
-            Size::Undefined => unimplemented!(), // not expected
+            Size::Undefined => Ok(()),
         }
     }
 
