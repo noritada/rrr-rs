@@ -76,18 +76,14 @@ impl ValueTree {
         let value_rc = Rc::new(value);
         let head = self.heads.last_mut();
         if let Some(head_value) = head {
-            if let Value::Struct(vec) = head_value.as_ref() {
-                vec.borrow_mut().push(Rc::clone(&value_rc));
-                if new_layer_created {
-                    self.heads.push(value_rc);
-                }
-            } else if let Value::Array(vec) = head_value.as_ref() {
-                vec.borrow_mut().push(Rc::clone(&value_rc));
-                if new_layer_created {
-                    self.heads.push(value_rc);
-                }
-            } else {
-                return Err(Error); // TODO: make more descriptive
+            let vec = match head_value.as_ref() {
+                Value::Struct(v) => Ok(v),
+                Value::Array(v) => Ok(v),
+                _ => Err(Error), // TODO: make more descriptive
+            }?;
+            vec.borrow_mut().push(Rc::clone(&value_rc));
+            if new_layer_created {
+                self.heads.push(value_rc);
             }
         } else {
             if new_layer_created {
