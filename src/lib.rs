@@ -94,8 +94,10 @@ impl std::error::Error for Error {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::value::{Number, Value};
+    use crate::value::{Number, Value, ValueTree};
     use crate::walker::Walker;
+    use std::cell::RefCell;
+    use std::rc::Rc;
 
     fn ast_without_str() -> Field {
         Field {
@@ -276,6 +278,72 @@ mod tests {
                 Value::Number(Number::UInt16(10)),
                 Value::String("0123456789abcdef".to_owned()),
             ]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn visitor_read_and_structure() -> Result<(), Box<dyn std::error::Error>> {
+        let ast = ast_with_str();
+
+        let buf = vec![
+            0x07, 0xe6, 0x01, 0x01, 0x54, 0x4f, 0x4b, 0x59, 0x4f, 0x00, 0x00, 0x64, 0x00, 0x0a,
+            0x4f, 0x53, 0x41, 0x4b, 0x41, 0x00, 0x00, 0x64, 0x00, 0x0a, 0x4e, 0x41, 0x47, 0x4f,
+            0x59, 0x41, 0x00, 0x00, 0x64, 0x00, 0x0a, 0x46, 0x55, 0x4b, 0x55, 0x4f, 0x4b, 0x41,
+            0x00, 0x00, 0x64, 0x00, 0x0a, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38,
+            0x39, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66,
+        ];
+        let mut walker = Walker::new(buf.as_slice());
+        let tree = Rc::new(RefCell::new(ValueTree::new()));
+        let tree_close = Rc::clone(&tree);
+        let mut add = |field: &Field| {
+            let value = walker.read(field)?;
+            tree.borrow_mut().add_value(value)?;
+            Ok(())
+        };
+        let mut close = |field: &Field| {
+            if matches!(
+                field.kind,
+                FieldKind::Struct { .. } | FieldKind::Array { .. }
+            ) {
+                tree_close.borrow_mut().close_value()?;
+            }
+            Ok(())
+        };
+        visit(&ast, &mut add, &mut close)?;
+        assert_eq!(walker.pos(), 63);
+        assert_eq!(
+            tree.as_ref().borrow_mut().get()?,
+            &Value::Struct(RefCell::new(vec![
+                Rc::new(Value::Struct(RefCell::new(vec![
+                    Rc::new(Value::Number(Number::UInt16(2022))),
+                    Rc::new(Value::Number(Number::UInt8(1))),
+                    Rc::new(Value::Number(Number::UInt8(1))),
+                ]))),
+                Rc::new(Value::Array(RefCell::new(vec![
+                    Rc::new(Value::Struct(RefCell::new(vec![
+                        Rc::new(Value::String("TOKYO".to_owned())),
+                        Rc::new(Value::Number(Number::Int16(100))),
+                        Rc::new(Value::Number(Number::UInt16(10))),
+                    ]))),
+                    Rc::new(Value::Struct(RefCell::new(vec![
+                        Rc::new(Value::String("OSAKA".to_owned())),
+                        Rc::new(Value::Number(Number::Int16(100))),
+                        Rc::new(Value::Number(Number::UInt16(10))),
+                    ]))),
+                    Rc::new(Value::Struct(RefCell::new(vec![
+                        Rc::new(Value::String("NAGOYA".to_owned())),
+                        Rc::new(Value::Number(Number::Int16(100))),
+                        Rc::new(Value::Number(Number::UInt16(10))),
+                    ]))),
+                    Rc::new(Value::Struct(RefCell::new(vec![
+                        Rc::new(Value::String("FUKUOKA".to_owned())),
+                        Rc::new(Value::Number(Number::Int16(100))),
+                        Rc::new(Value::Number(Number::UInt16(10))),
+                    ]))),
+                ]))),
+                Rc::new(Value::String("0123456789abcdef".to_owned())),
+            ]))
         );
         Ok(())
     }

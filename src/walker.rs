@@ -34,8 +34,8 @@ impl<'w> Walker<'w> {
             FieldKind::NStr(size) => {
                 Value::String(String::from_utf8_lossy(self.read_nstr(size)?).to_string())
             }
-            FieldKind::Struct { .. } => unimplemented!(),
-            FieldKind::Array { .. } => unimplemented!(),
+            FieldKind::Struct { .. } => Value::new_struct(),
+            FieldKind::Array { .. } => Value::new_array(),
         };
         Ok(value)
     }
