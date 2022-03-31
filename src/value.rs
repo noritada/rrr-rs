@@ -7,11 +7,16 @@ pub(crate) enum Value {
     Number(Number),
     String(String),
     Struct(RefCell<Vec<Rc<Value>>>),
+    Array(RefCell<Vec<Rc<Value>>>),
 }
 
 impl Value {
     pub(crate) fn new_struct() -> Self {
         Self::Struct(RefCell::new(Vec::new()))
+    }
+
+    pub(crate) fn new_array() -> Self {
+        Self::Array(RefCell::new(Vec::new()))
     }
 }
 
@@ -67,20 +72,25 @@ impl ValueTree {
             return Err(Error); // TODO: make more descriptive
         }
 
-        let value_is_struct = matches!(value, Value::Struct { .. });
+        let new_layer_created = matches!(value, Value::Struct { .. } | Value::Array { .. });
         let value_rc = Rc::new(value);
         let head = self.heads.last_mut();
         if let Some(head_value) = head {
             if let Value::Struct(vec) = head_value.as_ref() {
                 vec.borrow_mut().push(Rc::clone(&value_rc));
-                if value_is_struct {
+                if new_layer_created {
+                    self.heads.push(value_rc);
+                }
+            } else if let Value::Array(vec) = head_value.as_ref() {
+                vec.borrow_mut().push(Rc::clone(&value_rc));
+                if new_layer_created {
                     self.heads.push(value_rc);
                 }
             } else {
                 return Err(Error); // TODO: make more descriptive
             }
         } else {
-            if value_is_struct {
+            if new_layer_created {
                 self.heads.push(value_rc);
             }
         }
@@ -218,6 +228,105 @@ mod tests {
 
         let result = tree.get();
         assert_eq!(result, Err(Error));
+        Ok(())
+    }
+
+    #[test]
+    fn value_tree_with_struct_and_array_layers() -> Result<(), Box<dyn std::error::Error>> {
+        let mut tree = ValueTree::new();
+        tree.add_value(Value::new_struct())?;
+        tree.add_value(Value::Number(2022u16.into()))?;
+        tree.add_value(Value::Number(1u8.into()))?;
+        tree.add_value(Value::new_array())?;
+        tree.add_value(Value::new_struct())?;
+        tree.add_value(Value::Number(1u8.into()))?;
+        tree.close_value()?;
+        tree.add_value(Value::new_struct())?;
+        tree.add_value(Value::Number(2u8.into()))?;
+        tree.close_value()?;
+        tree.close_value()?;
+        tree.close_value()?;
+
+        let result = &*tree.get()?;
+        assert_eq!(
+            result,
+            &Value::Struct(RefCell::new(vec![
+                Rc::new(Value::Number(Number::UInt16(2022))),
+                Rc::new(Value::Number(Number::UInt8(1))),
+                Rc::new(Value::Array(RefCell::new(vec![
+                    Rc::new(Value::Struct(RefCell::new(vec![Rc::new(Value::Number(
+                        Number::UInt8(1)
+                    ))]),)),
+                    Rc::new(Value::Struct(RefCell::new(vec![Rc::new(Value::Number(
+                        Number::UInt8(2)
+                    ))]),)),
+                ])))
+            ]))
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn value_tree_with_struct_and_nested_array_layers() -> Result<(), Box<dyn std::error::Error>> {
+        let mut tree = ValueTree::new();
+        tree.add_value(Value::new_struct())?;
+        tree.add_value(Value::Number(2022u16.into()))?;
+        tree.add_value(Value::Number(1u8.into()))?;
+        tree.add_value(Value::new_array())?;
+        tree.add_value(Value::new_struct())?;
+        tree.add_value(Value::Number(1u8.into()))?;
+
+        tree.add_value(Value::new_array())?;
+        tree.add_value(Value::new_struct())?;
+        tree.add_value(Value::Number(1u8.into()))?;
+        tree.close_value()?;
+        tree.add_value(Value::new_struct())?;
+        tree.add_value(Value::Number(2u8.into()))?;
+        tree.close_value()?;
+        tree.close_value()?;
+
+        tree.add_value(Value::new_array())?;
+        tree.add_value(Value::new_struct())?;
+        tree.add_value(Value::Number(1u8.into()))?;
+        tree.close_value()?;
+        tree.add_value(Value::new_struct())?;
+        tree.add_value(Value::Number(2u8.into()))?;
+        tree.close_value()?;
+        tree.close_value()?;
+
+        tree.close_value()?;
+        tree.close_value()?;
+        tree.close_value()?;
+
+        let result = &*tree.get()?;
+        assert_eq!(
+            result,
+            &Value::Struct(RefCell::new(vec![
+                Rc::new(Value::Number(Number::UInt16(2022))),
+                Rc::new(Value::Number(Number::UInt8(1))),
+                Rc::new(Value::Array(RefCell::new(vec![Rc::new(Value::Struct(
+                    RefCell::new(vec![
+                        Rc::new(Value::Number(Number::UInt8(1))),
+                        Rc::new(Value::Array(RefCell::new(vec![
+                            Rc::new(Value::Struct(RefCell::new(vec![Rc::new(Value::Number(
+                                Number::UInt8(1)
+                            ))]),)),
+                            Rc::new(Value::Struct(RefCell::new(vec![Rc::new(Value::Number(
+                                Number::UInt8(2)
+                            ))]),)),
+                        ]))),
+                        Rc::new(Value::Array(RefCell::new(vec![
+                            Rc::new(Value::Struct(RefCell::new(vec![Rc::new(Value::Number(
+                                Number::UInt8(1)
+                            ))]),)),
+                            Rc::new(Value::Struct(RefCell::new(vec![Rc::new(Value::Number(
+                                Number::UInt8(2)
+                            ))]),)),
+                        ]))),
+                    ])
+                ))])))
+            ]))
+        );
         Ok(())
     }
 }

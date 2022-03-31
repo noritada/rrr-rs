@@ -38,7 +38,7 @@ enum FieldKind {
     Str,
     NStr(usize),
     Struct { members: Vec<Field> },
-    Array { len: usize, element: Vec<Field> },
+    Array { len: usize, element: Box<Field> }, // use Box to avoid E0072
 }
 
 enum Size {
@@ -67,9 +67,7 @@ where
             name: _,
         } => {
             for _ in 0..(*len) {
-                for member in element.iter() {
-                    visit(member, start_f, end_f)?;
-                }
+                visit(element, start_f, end_f)?;
             }
         }
         _ => {}
@@ -127,20 +125,25 @@ mod tests {
                         name: "data".to_owned(),
                         kind: FieldKind::Array {
                             len: 4,
-                            element: vec![
-                                Field {
-                                    name: "loc".to_owned(),
-                                    kind: FieldKind::NStr(4),
+                            element: Box::new(Field {
+                                name: "[]".to_owned(),
+                                kind: FieldKind::Struct {
+                                    members: vec![
+                                        Field {
+                                            name: "loc".to_owned(),
+                                            kind: FieldKind::NStr(4),
+                                        },
+                                        Field {
+                                            name: "temp".to_owned(),
+                                            kind: FieldKind::Int16,
+                                        },
+                                        Field {
+                                            name: "rhum".to_owned(),
+                                            kind: FieldKind::UInt16,
+                                        },
+                                    ],
                                 },
-                                Field {
-                                    name: "temp".to_owned(),
-                                    kind: FieldKind::Int16,
-                                },
-                                Field {
-                                    name: "rhum".to_owned(),
-                                    kind: FieldKind::UInt16,
-                                },
-                            ],
+                            }),
                         },
                     },
                     Field {
@@ -180,20 +183,25 @@ mod tests {
                         name: "data".to_owned(),
                         kind: FieldKind::Array {
                             len: 4,
-                            element: vec![
-                                Field {
-                                    name: "loc".to_owned(),
-                                    kind: FieldKind::Str,
+                            element: Box::new(Field {
+                                name: "[]".to_owned(),
+                                kind: FieldKind::Struct {
+                                    members: vec![
+                                        Field {
+                                            name: "loc".to_owned(),
+                                            kind: FieldKind::Str,
+                                        },
+                                        Field {
+                                            name: "temp".to_owned(),
+                                            kind: FieldKind::Int16,
+                                        },
+                                        Field {
+                                            name: "rhum".to_owned(),
+                                            kind: FieldKind::UInt16,
+                                        },
+                                    ],
                                 },
-                                Field {
-                                    name: "temp".to_owned(),
-                                    kind: FieldKind::Int16,
-                                },
-                                Field {
-                                    name: "rhum".to_owned(),
-                                    kind: FieldKind::UInt16,
-                                },
-                            ],
+                            }),
                         },
                     },
                     Field {
