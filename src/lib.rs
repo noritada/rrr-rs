@@ -52,131 +52,27 @@ impl std::error::Error for Error {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::Size;
+    use crate::ast::{SchemaParseError, Size};
     use crate::value::{Number, Value, ValueTree};
     use crate::walker::Walker;
     use std::cell::RefCell;
     use std::rc::Rc;
 
-    fn ast_without_str() -> Ast {
-        Ast {
-            name: "".to_owned(),
-            kind: AstKind::Struct {
-                members: vec![
-                    Ast {
-                        name: "date".to_owned(),
-                        kind: AstKind::Struct {
-                            members: vec![
-                                Ast {
-                                    name: "year".to_owned(),
-                                    kind: AstKind::UInt16,
-                                },
-                                Ast {
-                                    name: "month".to_owned(),
-                                    kind: AstKind::UInt8,
-                                },
-                                Ast {
-                                    name: "day".to_owned(),
-                                    kind: AstKind::UInt8,
-                                },
-                            ],
-                        },
-                    },
-                    Ast {
-                        name: "data".to_owned(),
-                        kind: AstKind::Array {
-                            len: 4,
-                            element: Box::new(Ast {
-                                name: "[]".to_owned(),
-                                kind: AstKind::Struct {
-                                    members: vec![
-                                        Ast {
-                                            name: "loc".to_owned(),
-                                            kind: AstKind::NStr(4),
-                                        },
-                                        Ast {
-                                            name: "temp".to_owned(),
-                                            kind: AstKind::Int16,
-                                        },
-                                        Ast {
-                                            name: "rhum".to_owned(),
-                                            kind: AstKind::UInt16,
-                                        },
-                                    ],
-                                },
-                            }),
-                        },
-                    },
-                    Ast {
-                        name: "comment".to_owned(),
-                        kind: AstKind::NStr(16),
-                    },
-                ],
-            },
-        }
+    fn ast_without_str() -> Result<Ast, SchemaParseError> {
+        let ast = "date:[year:UINT16,month:UINT8,day:UINT8],\
+            data:{4}[loc:<4>NSTR,temp:INT16,rhum:UINT16],comment:<16>NSTR";
+        ast.parse()
     }
 
-    fn ast_with_str() -> Ast {
-        Ast {
-            name: "".to_owned(),
-            kind: AstKind::Struct {
-                members: vec![
-                    Ast {
-                        name: "date".to_owned(),
-                        kind: AstKind::Struct {
-                            members: vec![
-                                Ast {
-                                    name: "year".to_owned(),
-                                    kind: AstKind::UInt16,
-                                },
-                                Ast {
-                                    name: "month".to_owned(),
-                                    kind: AstKind::UInt8,
-                                },
-                                Ast {
-                                    name: "day".to_owned(),
-                                    kind: AstKind::UInt8,
-                                },
-                            ],
-                        },
-                    },
-                    Ast {
-                        name: "data".to_owned(),
-                        kind: AstKind::Array {
-                            len: 4,
-                            element: Box::new(Ast {
-                                name: "[]".to_owned(),
-                                kind: AstKind::Struct {
-                                    members: vec![
-                                        Ast {
-                                            name: "loc".to_owned(),
-                                            kind: AstKind::Str,
-                                        },
-                                        Ast {
-                                            name: "temp".to_owned(),
-                                            kind: AstKind::Int16,
-                                        },
-                                        Ast {
-                                            name: "rhum".to_owned(),
-                                            kind: AstKind::UInt16,
-                                        },
-                                    ],
-                                },
-                            }),
-                        },
-                    },
-                    Ast {
-                        name: "comment".to_owned(),
-                        kind: AstKind::NStr(16),
-                    },
-                ],
-            },
-        }
+    fn ast_with_str() -> Result<Ast, SchemaParseError> {
+        let ast = "date:[year:UINT16,month:UINT8,day:UINT8],\
+            data:{4}[loc:STR,temp:INT16,rhum:UINT16],comment:<16>NSTR";
+        ast.parse()
     }
 
     #[test]
     fn visitor_basic_functionality() -> Result<(), Box<dyn std::error::Error>> {
-        let ast = ast_without_str();
+        let ast = ast_without_str()?;
 
         let mut pos = 0;
         let mut inc_pos = |node: &Ast| -> Result<(), Error> {
@@ -194,7 +90,7 @@ mod tests {
 
     #[test]
     fn visitor_read() -> Result<(), Box<dyn std::error::Error>> {
-        let ast = ast_with_str();
+        let ast = ast_with_str()?;
 
         let buf = vec![
             0x07, 0xe6, 0x01, 0x01, 0x54, 0x4f, 0x4b, 0x59, 0x4f, 0x00, 0x00, 0x64, 0x00, 0x0a,
@@ -240,7 +136,7 @@ mod tests {
 
     #[test]
     fn visitor_read_and_structure() -> Result<(), Box<dyn std::error::Error>> {
-        let ast = ast_with_str();
+        let ast = ast_with_str()?;
 
         let buf = vec![
             0x07, 0xe6, 0x01, 0x01, 0x54, 0x4f, 0x4b, 0x59, 0x4f, 0x00, 0x00, 0x64, 0x00, 0x0a,
@@ -303,7 +199,7 @@ mod tests {
 
     #[test]
     fn visitor_skip() -> Result<(), Box<dyn std::error::Error>> {
-        let ast = ast_with_str();
+        let ast = ast_with_str()?;
 
         let buf = vec![
             0x07, 0xe6, 0x01, 0x01, 0x54, 0x4f, 0x4b, 0x59, 0x4f, 0x00, 0x00, 0x64, 0x00, 0x0a,
