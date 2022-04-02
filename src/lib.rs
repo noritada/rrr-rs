@@ -1,51 +1,9 @@
+mod ast;
 mod utils;
 mod value;
 mod walker;
 
-struct Field {
-    kind: FieldKind,
-    name: String,
-}
-
-impl Field {
-    fn size(&self) -> Size {
-        match self.kind {
-            FieldKind::Int8 => Size::Known(std::mem::size_of::<i8>()),
-            FieldKind::Int16 => Size::Known(std::mem::size_of::<i16>()),
-            FieldKind::Int32 => Size::Known(std::mem::size_of::<i32>()),
-            FieldKind::UInt8 => Size::Known(std::mem::size_of::<u8>()),
-            FieldKind::UInt16 => Size::Known(std::mem::size_of::<u16>()),
-            FieldKind::UInt32 => Size::Known(std::mem::size_of::<u32>()),
-            FieldKind::Float32 => Size::Known(std::mem::size_of::<f32>()),
-            FieldKind::Float64 => Size::Known(std::mem::size_of::<f64>()),
-            FieldKind::Str => Size::Unknown,
-            FieldKind::NStr(size) => Size::Known(size),
-            FieldKind::Struct { .. } => Size::Undefined,
-            FieldKind::Array { .. } => Size::Undefined,
-        }
-    }
-}
-
-enum FieldKind {
-    Int8,
-    Int16,
-    Int32,
-    UInt8,
-    UInt16,
-    UInt32,
-    Float32,
-    Float64,
-    Str,
-    NStr(usize),
-    Struct { members: Vec<Field> },
-    Array { len: usize, element: Box<Field> }, // use Box to avoid E0072
-}
-
-enum Size {
-    Known(usize),
-    Unknown,
-    Undefined,
-}
+use crate::ast::{Field, FieldKind};
 
 fn visit<'f, F, G>(field: &'f Field, start_f: &mut F, end_f: &mut G) -> Result<(), Error>
 where
@@ -94,6 +52,7 @@ impl std::error::Error for Error {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ast::Size;
     use crate::value::{Number, Value, ValueTree};
     use crate::walker::Walker;
     use std::cell::RefCell;

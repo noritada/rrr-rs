@@ -1,6 +1,7 @@
+use crate::ast::{Field, FieldKind, Size};
 use crate::utils::FromBytes;
 use crate::value::Value;
-use crate::{Error, Field, FieldKind, Size};
+use crate::Error;
 
 pub(crate) struct Walker<'w> {
     buf: &'w [u8],
