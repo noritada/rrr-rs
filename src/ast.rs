@@ -46,8 +46,8 @@ pub(crate) enum AstKind {
     Float64,
     Str,
     NStr(usize),
-    Struct { members: Vec<Ast> },
-    Array { len: usize, element: Box<Ast> }, // use Box to avoid E0072
+    Struct(Vec<Ast>),
+    Array(usize, Box<Ast>), // use Box to avoid E0072
 }
 
 pub(crate) enum Size {
@@ -112,7 +112,7 @@ impl<'b> SchemaParser<'b> {
             return Err(SchemaParseError::UnexpectedEof);
         }
 
-        let kind = AstKind::Struct { members };
+        let kind = AstKind::Struct(members);
         Ok(kind)
     }
 
@@ -191,10 +191,7 @@ impl<'b> SchemaParser<'b> {
             kind: struct_kind,
             name: "[]".to_owned(),
         };
-        Ok(AstKind::Array {
-            len,
-            element: Box::new(struct_node),
-        })
+        Ok(AstKind::Array(len, Box::new(struct_node)))
     }
 
     fn consume_number(&mut self) -> Result<usize, SchemaParseError> {
@@ -338,12 +335,10 @@ mod tests {
         let actual = parser.parse();
         let expected = Ok(Ast {
             name: "".to_owned(),
-            kind: AstKind::Struct {
-                members: vec![Ast {
-                    name: "fld1".to_owned(),
-                    kind: AstKind::Int16,
-                }],
-            },
+            kind: AstKind::Struct(vec![Ast {
+                name: "fld1".to_owned(),
+                kind: AstKind::Int16,
+            }]),
         });
 
         assert_eq!(actual, expected);
@@ -356,27 +351,23 @@ mod tests {
         let actual = parser.parse();
         let expected = Ok(Ast {
             name: "".to_owned(),
-            kind: AstKind::Struct {
-                members: vec![Ast {
-                    name: "fld1".to_owned(),
-                    kind: AstKind::Struct {
-                        members: vec![
-                            Ast {
-                                name: "sfld1".to_owned(),
-                                kind: AstKind::NStr(4),
-                            },
-                            Ast {
-                                name: "sfld2".to_owned(),
-                                kind: AstKind::Str,
-                            },
-                            Ast {
-                                name: "sfld3".to_owned(),
-                                kind: AstKind::Int32,
-                            },
-                        ],
+            kind: AstKind::Struct(vec![Ast {
+                name: "fld1".to_owned(),
+                kind: AstKind::Struct(vec![
+                    Ast {
+                        name: "sfld1".to_owned(),
+                        kind: AstKind::NStr(4),
                     },
-                }],
-            },
+                    Ast {
+                        name: "sfld2".to_owned(),
+                        kind: AstKind::Str,
+                    },
+                    Ast {
+                        name: "sfld3".to_owned(),
+                        kind: AstKind::Int32,
+                    },
+                ]),
+            }]),
         });
 
         assert_eq!(actual, expected);
@@ -389,32 +380,26 @@ mod tests {
         let actual = parser.parse();
         let expected = Ok(Ast {
             name: "".to_owned(),
-            kind: AstKind::Struct {
-                members: vec![Ast {
-                    name: "fld1".to_owned(),
-                    kind: AstKind::Struct {
-                        members: vec![Ast {
-                            name: "sfld1".to_owned(),
-                            kind: AstKind::Struct {
-                                members: vec![
-                                    Ast {
-                                        name: "ssfld1".to_owned(),
-                                        kind: AstKind::NStr(4),
-                                    },
-                                    Ast {
-                                        name: "ssfld2".to_owned(),
-                                        kind: AstKind::Str,
-                                    },
-                                    Ast {
-                                        name: "ssfld3".to_owned(),
-                                        kind: AstKind::Int32,
-                                    },
-                                ],
-                            },
-                        }],
-                    },
-                }],
-            },
+            kind: AstKind::Struct(vec![Ast {
+                name: "fld1".to_owned(),
+                kind: AstKind::Struct(vec![Ast {
+                    name: "sfld1".to_owned(),
+                    kind: AstKind::Struct(vec![
+                        Ast {
+                            name: "ssfld1".to_owned(),
+                            kind: AstKind::NStr(4),
+                        },
+                        Ast {
+                            name: "ssfld2".to_owned(),
+                            kind: AstKind::Str,
+                        },
+                        Ast {
+                            name: "ssfld3".to_owned(),
+                            kind: AstKind::Int32,
+                        },
+                    ]),
+                }]),
+            }]),
         });
 
         assert_eq!(actual, expected);
@@ -427,33 +412,29 @@ mod tests {
         let actual = parser.parse();
         let expected = Ok(Ast {
             name: "".to_owned(),
-            kind: AstKind::Struct {
-                members: vec![Ast {
-                    name: "fld1".to_owned(),
-                    kind: AstKind::Array {
-                        len: 3,
-                        element: Box::new(Ast {
-                            name: "[]".to_owned(),
-                            kind: AstKind::Struct {
-                                members: vec![
-                                    Ast {
-                                        name: "sfld1".to_owned(),
-                                        kind: AstKind::NStr(4),
-                                    },
-                                    Ast {
-                                        name: "sfld2".to_owned(),
-                                        kind: AstKind::Str,
-                                    },
-                                    Ast {
-                                        name: "sfld3".to_owned(),
-                                        kind: AstKind::Int32,
-                                    },
-                                ],
+            kind: AstKind::Struct(vec![Ast {
+                name: "fld1".to_owned(),
+                kind: AstKind::Array(
+                    3,
+                    Box::new(Ast {
+                        name: "[]".to_owned(),
+                        kind: AstKind::Struct(vec![
+                            Ast {
+                                name: "sfld1".to_owned(),
+                                kind: AstKind::NStr(4),
                             },
-                        }),
-                    },
-                }],
-            },
+                            Ast {
+                                name: "sfld2".to_owned(),
+                                kind: AstKind::Str,
+                            },
+                            Ast {
+                                name: "sfld3".to_owned(),
+                                kind: AstKind::Int32,
+                            },
+                        ]),
+                    }),
+                ),
+            }]),
         });
 
         assert_eq!(actual, expected);

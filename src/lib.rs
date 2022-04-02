@@ -13,7 +13,7 @@ where
     start_f(node)?;
     match node {
         Ast {
-            kind: AstKind::Struct { members },
+            kind: AstKind::Struct(members),
             name: _,
         } => {
             for member in members.iter() {
@@ -21,7 +21,7 @@ where
             }
         }
         Ast {
-            kind: AstKind::Array { len, element },
+            kind: AstKind::Array(len, element),
             name: _,
         } => {
             for _ in 0..(*len) {
