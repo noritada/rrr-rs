@@ -1,4 +1,4 @@
-use crate::ast::{Field, FieldKind, Size};
+use crate::ast::{Ast, AstKind, Size};
 use crate::utils::FromBytes;
 use crate::value::Value;
 use crate::Error;
@@ -20,23 +20,23 @@ impl<'w> Walker<'w> {
         self.pos = pos;
     }
 
-    pub(crate) fn read(&mut self, field: &Field) -> Result<Value, Error> {
-        let value = match field.kind {
-            FieldKind::Int8 => Value::Number(self.read_number::<i8>()?.into()),
-            FieldKind::Int16 => Value::Number(self.read_number::<i16>()?.into()),
-            FieldKind::Int32 => Value::Number(self.read_number::<i32>()?.into()),
-            FieldKind::UInt8 => Value::Number(self.read_number::<u8>()?.into()),
-            FieldKind::UInt16 => Value::Number(self.read_number::<u16>()?.into()),
-            FieldKind::UInt32 => Value::Number(self.read_number::<u32>()?.into()),
-            FieldKind::Float32 => Value::Number(self.read_number::<f32>()?.into()),
-            FieldKind::Float64 => Value::Number(self.read_number::<f64>()?.into()),
+    pub(crate) fn read(&mut self, node: &Ast) -> Result<Value, Error> {
+        let value = match node.kind {
+            AstKind::Int8 => Value::Number(self.read_number::<i8>()?.into()),
+            AstKind::Int16 => Value::Number(self.read_number::<i16>()?.into()),
+            AstKind::Int32 => Value::Number(self.read_number::<i32>()?.into()),
+            AstKind::UInt8 => Value::Number(self.read_number::<u8>()?.into()),
+            AstKind::UInt16 => Value::Number(self.read_number::<u16>()?.into()),
+            AstKind::UInt32 => Value::Number(self.read_number::<u32>()?.into()),
+            AstKind::Float32 => Value::Number(self.read_number::<f32>()?.into()),
+            AstKind::Float64 => Value::Number(self.read_number::<f64>()?.into()),
             // assuming that strings are utf8-encoded
-            FieldKind::Str => Value::String(String::from_utf8_lossy(self.read_str()?).to_string()),
-            FieldKind::NStr(size) => {
+            AstKind::Str => Value::String(String::from_utf8_lossy(self.read_str()?).to_string()),
+            AstKind::NStr(size) => {
                 Value::String(String::from_utf8_lossy(self.read_nstr(size)?).to_string())
             }
-            FieldKind::Struct { .. } => Value::new_struct(),
-            FieldKind::Array { .. } => Value::new_array(),
+            AstKind::Struct { .. } => Value::new_struct(),
+            AstKind::Array { .. } => Value::new_array(),
         };
         Ok(value)
     }
@@ -68,8 +68,8 @@ impl<'w> Walker<'w> {
         Ok(string)
     }
 
-    pub(crate) fn skip(&mut self, field: &Field) -> Result<(), Error> {
-        match field.size() {
+    pub(crate) fn skip(&mut self, node: &Ast) -> Result<(), Error> {
+        match node.size() {
             Size::Known(size) => {
                 self.pos += size;
                 Ok(())

@@ -3,25 +3,25 @@ mod utils;
 mod value;
 mod walker;
 
-use crate::ast::{Field, FieldKind};
+use crate::ast::{Ast, AstKind};
 
-fn visit<'f, F, G>(field: &'f Field, start_f: &mut F, end_f: &mut G) -> Result<(), Error>
+fn visit<'f, F, G>(node: &'f Ast, start_f: &mut F, end_f: &mut G) -> Result<(), Error>
 where
-    F: FnMut(&'f Field) -> Result<(), Error>,
-    G: FnMut(&'f Field) -> Result<(), Error>,
+    F: FnMut(&'f Ast) -> Result<(), Error>,
+    G: FnMut(&'f Ast) -> Result<(), Error>,
 {
-    start_f(field)?;
-    match field {
-        Field {
-            kind: FieldKind::Struct { members },
+    start_f(node)?;
+    match node {
+        Ast {
+            kind: AstKind::Struct { members },
             name: _,
         } => {
             for member in members.iter() {
                 visit(member, start_f, end_f)?;
             }
         }
-        Field {
-            kind: FieldKind::Array { len, element },
+        Ast {
+            kind: AstKind::Array { len, element },
             name: _,
         } => {
             for _ in 0..(*len) {
@@ -30,7 +30,7 @@ where
         }
         _ => {}
     }
-    end_f(field)?;
+    end_f(node)?;
     Ok(())
 }
 
@@ -58,116 +58,116 @@ mod tests {
     use std::cell::RefCell;
     use std::rc::Rc;
 
-    fn ast_without_str() -> Field {
-        Field {
+    fn ast_without_str() -> Ast {
+        Ast {
             name: "".to_owned(),
-            kind: FieldKind::Struct {
+            kind: AstKind::Struct {
                 members: vec![
-                    Field {
+                    Ast {
                         name: "date".to_owned(),
-                        kind: FieldKind::Struct {
+                        kind: AstKind::Struct {
                             members: vec![
-                                Field {
+                                Ast {
                                     name: "year".to_owned(),
-                                    kind: FieldKind::UInt16,
+                                    kind: AstKind::UInt16,
                                 },
-                                Field {
+                                Ast {
                                     name: "month".to_owned(),
-                                    kind: FieldKind::UInt8,
+                                    kind: AstKind::UInt8,
                                 },
-                                Field {
+                                Ast {
                                     name: "day".to_owned(),
-                                    kind: FieldKind::UInt8,
+                                    kind: AstKind::UInt8,
                                 },
                             ],
                         },
                     },
-                    Field {
+                    Ast {
                         name: "data".to_owned(),
-                        kind: FieldKind::Array {
+                        kind: AstKind::Array {
                             len: 4,
-                            element: Box::new(Field {
+                            element: Box::new(Ast {
                                 name: "[]".to_owned(),
-                                kind: FieldKind::Struct {
+                                kind: AstKind::Struct {
                                     members: vec![
-                                        Field {
+                                        Ast {
                                             name: "loc".to_owned(),
-                                            kind: FieldKind::NStr(4),
+                                            kind: AstKind::NStr(4),
                                         },
-                                        Field {
+                                        Ast {
                                             name: "temp".to_owned(),
-                                            kind: FieldKind::Int16,
+                                            kind: AstKind::Int16,
                                         },
-                                        Field {
+                                        Ast {
                                             name: "rhum".to_owned(),
-                                            kind: FieldKind::UInt16,
+                                            kind: AstKind::UInt16,
                                         },
                                     ],
                                 },
                             }),
                         },
                     },
-                    Field {
+                    Ast {
                         name: "comment".to_owned(),
-                        kind: FieldKind::NStr(16),
+                        kind: AstKind::NStr(16),
                     },
                 ],
             },
         }
     }
 
-    fn ast_with_str() -> Field {
-        Field {
+    fn ast_with_str() -> Ast {
+        Ast {
             name: "".to_owned(),
-            kind: FieldKind::Struct {
+            kind: AstKind::Struct {
                 members: vec![
-                    Field {
+                    Ast {
                         name: "date".to_owned(),
-                        kind: FieldKind::Struct {
+                        kind: AstKind::Struct {
                             members: vec![
-                                Field {
+                                Ast {
                                     name: "year".to_owned(),
-                                    kind: FieldKind::UInt16,
+                                    kind: AstKind::UInt16,
                                 },
-                                Field {
+                                Ast {
                                     name: "month".to_owned(),
-                                    kind: FieldKind::UInt8,
+                                    kind: AstKind::UInt8,
                                 },
-                                Field {
+                                Ast {
                                     name: "day".to_owned(),
-                                    kind: FieldKind::UInt8,
+                                    kind: AstKind::UInt8,
                                 },
                             ],
                         },
                     },
-                    Field {
+                    Ast {
                         name: "data".to_owned(),
-                        kind: FieldKind::Array {
+                        kind: AstKind::Array {
                             len: 4,
-                            element: Box::new(Field {
+                            element: Box::new(Ast {
                                 name: "[]".to_owned(),
-                                kind: FieldKind::Struct {
+                                kind: AstKind::Struct {
                                     members: vec![
-                                        Field {
+                                        Ast {
                                             name: "loc".to_owned(),
-                                            kind: FieldKind::Str,
+                                            kind: AstKind::Str,
                                         },
-                                        Field {
+                                        Ast {
                                             name: "temp".to_owned(),
-                                            kind: FieldKind::Int16,
+                                            kind: AstKind::Int16,
                                         },
-                                        Field {
+                                        Ast {
                                             name: "rhum".to_owned(),
-                                            kind: FieldKind::UInt16,
+                                            kind: AstKind::UInt16,
                                         },
                                     ],
                                 },
                             }),
                         },
                     },
-                    Field {
+                    Ast {
                         name: "comment".to_owned(),
-                        kind: FieldKind::NStr(16),
+                        kind: AstKind::NStr(16),
                     },
                 ],
             },
@@ -179,8 +179,8 @@ mod tests {
         let ast = ast_without_str();
 
         let mut pos = 0;
-        let mut inc_pos = |field: &Field| -> Result<(), Error> {
-            match field.size() {
+        let mut inc_pos = |node: &Ast| -> Result<(), Error> {
+            match node.size() {
                 Size::Known(size) => pos += size,
                 Size::Unknown => unimplemented!(),
                 Size::Undefined => {}
@@ -205,12 +205,9 @@ mod tests {
         ];
         let mut walker = Walker::new(buf.as_slice());
         let mut vec = Vec::new();
-        let mut read = |field: &Field| {
-            if !matches!(
-                field.kind,
-                FieldKind::Struct { .. } | FieldKind::Array { .. }
-            ) {
-                let value = walker.read(field)?;
+        let mut read = |node: &Ast| {
+            if !matches!(node.kind, AstKind::Struct { .. } | AstKind::Array { .. }) {
+                let value = walker.read(node)?;
                 vec.push(value);
             }
             Ok(())
@@ -255,16 +252,13 @@ mod tests {
         let mut walker = Walker::new(buf.as_slice());
         let tree = Rc::new(RefCell::new(ValueTree::new()));
         let tree_close = Rc::clone(&tree);
-        let mut add = |field: &Field| {
-            let value = walker.read(field)?;
+        let mut add = |node: &Ast| {
+            let value = walker.read(node)?;
             tree.borrow_mut().add_value(value)?;
             Ok(())
         };
-        let mut close = |field: &Field| {
-            if matches!(
-                field.kind,
-                FieldKind::Struct { .. } | FieldKind::Array { .. }
-            ) {
+        let mut close = |node: &Ast| {
+            if matches!(node.kind, AstKind::Struct { .. } | AstKind::Array { .. }) {
                 tree_close.borrow_mut().close_value()?;
             }
             Ok(())
@@ -319,7 +313,7 @@ mod tests {
             0x39, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66,
         ];
         let mut walker = Walker::new(buf.as_slice());
-        let mut skip = |field: &Field| walker.skip(field);
+        let mut skip = |node: &Ast| walker.skip(node);
         visit(&ast, &mut skip, &mut |_| Ok(()))?;
         assert_eq!(walker.pos(), 63);
         Ok(())
