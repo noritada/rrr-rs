@@ -54,7 +54,7 @@ mod tests {
     use super::*;
     use crate::ast::{SchemaParseError, Size};
     use crate::value::{Number, Value, ValueTree};
-    use crate::walker::Walker;
+    use crate::walker::BufWalker;
     use std::cell::RefCell;
     use std::rc::Rc;
 
@@ -99,7 +99,7 @@ mod tests {
             0x00, 0x00, 0x64, 0x00, 0x0a, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38,
             0x39, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66,
         ];
-        let mut walker = Walker::new(buf.as_slice());
+        let mut walker = BufWalker::new(buf.as_slice());
         let mut vec = Vec::new();
         let mut read = |node: &Ast| {
             if !matches!(node.kind, AstKind::Struct { .. } | AstKind::Array { .. }) {
@@ -145,7 +145,7 @@ mod tests {
             0x00, 0x00, 0x64, 0x00, 0x0a, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38,
             0x39, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66,
         ];
-        let mut walker = Walker::new(buf.as_slice());
+        let mut walker = BufWalker::new(buf.as_slice());
         let tree = Rc::new(RefCell::new(ValueTree::new()));
         let tree_close = Rc::clone(&tree);
         let mut add = |node: &Ast| {
@@ -208,7 +208,7 @@ mod tests {
             0x00, 0x00, 0x64, 0x00, 0x0a, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38,
             0x39, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66,
         ];
-        let mut walker = Walker::new(buf.as_slice());
+        let mut walker = BufWalker::new(buf.as_slice());
         let mut skip = |node: &Ast| walker.skip(node);
         visit(&ast, &mut skip, &mut |_| Ok(()))?;
         assert_eq!(walker.pos(), 63);

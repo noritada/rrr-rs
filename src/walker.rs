@@ -3,14 +3,14 @@ use crate::utils::FromBytes;
 use crate::value::Value;
 use crate::Error;
 
-pub(crate) struct Walker<'w> {
+pub(crate) struct BufWalker<'w> {
     buf: &'w [u8],
     pos: usize,
 }
 
-impl<'w> Walker<'w> {
+impl<'w> BufWalker<'w> {
     pub(crate) fn new(buf: &'w [u8]) -> Self {
-        Self { buf, pos: 0 }
+        BufWalker { buf, pos: 0 }
     }
 
     pub(crate) fn pos(&mut self) -> usize {
@@ -97,7 +97,7 @@ mod tests {
     #[test]
     fn read_i8() -> Result<(), Box<dyn std::error::Error>> {
         let buf = vec![0x00, 0x00, 0xfe, 0x00, 0x00];
-        let mut walker = Walker::new(buf.as_slice());
+        let mut walker = BufWalker::new(buf.as_slice());
         walker.set_pos(2);
         let result = walker.read_number::<i8>()?;
         assert_eq!(result, -2);
@@ -107,7 +107,7 @@ mod tests {
     #[test]
     fn read_i16() -> Result<(), Box<dyn std::error::Error>> {
         let buf = vec![0x00, 0x00, 0xfe, 0xdc, 0x00, 0x00];
-        let mut walker = Walker::new(buf.as_slice());
+        let mut walker = BufWalker::new(buf.as_slice());
         walker.set_pos(2);
         let result = walker.read_number::<i16>()?;
         assert_eq!(result, -292);
@@ -117,7 +117,7 @@ mod tests {
     #[test]
     fn read_i32() -> Result<(), Box<dyn std::error::Error>> {
         let buf = vec![0x00, 0x00, 0xfe, 0xdc, 0xba, 0x98, 0x00];
-        let mut walker = Walker::new(buf.as_slice());
+        let mut walker = BufWalker::new(buf.as_slice());
         walker.set_pos(2);
         let result = walker.read_number::<i32>()?;
         assert_eq!(result, -19088744);
@@ -127,7 +127,7 @@ mod tests {
     #[test]
     fn read_u8() -> Result<(), Box<dyn std::error::Error>> {
         let buf = vec![0x00, 0x00, 0xfe, 0x00, 0x00];
-        let mut walker = Walker::new(buf.as_slice());
+        let mut walker = BufWalker::new(buf.as_slice());
         walker.set_pos(2);
         let result = walker.read_number::<u8>()?;
         assert_eq!(result, 254);
@@ -137,7 +137,7 @@ mod tests {
     #[test]
     fn read_u16() -> Result<(), Box<dyn std::error::Error>> {
         let buf = vec![0x00, 0x00, 0xfe, 0xdc, 0x00, 0x00];
-        let mut walker = Walker::new(buf.as_slice());
+        let mut walker = BufWalker::new(buf.as_slice());
         walker.set_pos(2);
         let result = walker.read_number::<u16>()?;
         assert_eq!(result, 65244);
@@ -147,7 +147,7 @@ mod tests {
     #[test]
     fn read_u32() -> Result<(), Box<dyn std::error::Error>> {
         let buf = vec![0x00, 0x00, 0xfe, 0xdc, 0xba, 0x98, 0x00, 0x00];
-        let mut walker = Walker::new(buf.as_slice());
+        let mut walker = BufWalker::new(buf.as_slice());
         walker.set_pos(2);
         let result = walker.read_number::<u32>()?;
         assert_eq!(result, 4275878552);
@@ -157,7 +157,7 @@ mod tests {
     #[test]
     fn read_f32() -> Result<(), Box<dyn std::error::Error>> {
         let buf = vec![0x00, 0x00, 0xbf, 0x80, 0x00, 0x00, 0x00, 0x00];
-        let mut walker = Walker::new(buf.as_slice());
+        let mut walker = BufWalker::new(buf.as_slice());
         walker.set_pos(2);
         let result = walker.read_number::<f32>()?;
         assert_eq!(result, -1.0);
@@ -169,7 +169,7 @@ mod tests {
         let buf = vec![
             0x00, 0x00, 0xbf, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ];
-        let mut walker = Walker::new(buf.as_slice());
+        let mut walker = BufWalker::new(buf.as_slice());
         walker.set_pos(2);
         let result = walker.read_number::<f64>()?;
         assert_eq!(result, -1.0);
@@ -179,7 +179,7 @@ mod tests {
     #[test]
     fn read_str() -> Result<(), Box<dyn std::error::Error>> {
         let buf = vec![0x00, 0x00, 0x54, 0x4f, 0x4b, 0x59, 0x4f, 0x00, 0x00, 0x00];
-        let mut walker = Walker::new(buf.as_slice());
+        let mut walker = BufWalker::new(buf.as_slice());
         walker.set_pos(2);
         let result = walker.read_str()?;
         assert_eq!(result, "TOKYO".as_bytes());
@@ -189,7 +189,7 @@ mod tests {
     #[test]
     fn read_nstr() -> Result<(), Box<dyn std::error::Error>> {
         let buf = vec![0x00, 0x00, 0x54, 0x4f, 0x4b, 0x00, 0x00, 0x00];
-        let mut walker = Walker::new(buf.as_slice());
+        let mut walker = BufWalker::new(buf.as_slice());
         walker.set_pos(2);
         let result = walker.read_nstr(4)?;
         assert_eq!(result, "TOK\x00".as_bytes());
