@@ -1,18 +1,25 @@
+use std::collections::HashMap;
 use std::str::FromStr;
+
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct Schema {
+    pub(crate) ast: Ast,
+    pub(crate) params: ParamStack,
+}
+
+impl FromStr for Schema {
+    type Err = SchemaParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parser = SchemaParser::new(s.as_bytes());
+        parser.parse()
+    }
+}
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct Ast {
     pub(crate) kind: AstKind,
     pub(crate) name: String,
-}
-
-impl FromStr for Ast {
-    type Err = SchemaParseError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut parser = SchemaParser::new(s.as_bytes());
-        parser.parse()
-    }
 }
 
 impl Ast {
@@ -47,7 +54,13 @@ pub(crate) enum AstKind {
     Str,
     NStr(usize),
     Struct(Vec<Ast>),
-    Array(usize, Box<Ast>), // use Box to avoid E0072
+    Array(Len, Box<Ast>), // use Box to avoid E0072
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum Len {
+    Fixed(usize),
+    Variable(String),
 }
 
 pub(crate) enum Size {
@@ -58,16 +71,18 @@ pub(crate) enum Size {
 
 struct SchemaParser<'b> {
     lexer: std::iter::Peekable<SchemaLexer<'b>>,
+    params: ParamStack,
 }
 
 impl<'b> SchemaParser<'b> {
     fn new(input: &'b [u8]) -> Self {
         Self {
             lexer: SchemaLexer::new(input).peekable(),
+            params: ParamStack::new(),
         }
     }
 
-    fn parse(&mut self) -> Result<Ast, SchemaParseError> {
+    fn parse(mut self) -> Result<Schema, SchemaParseError> {
         let kind = self.parse_field_list()?;
         if self.lexer.next().is_some() {
             // should be Token::RBracket
@@ -76,11 +91,14 @@ impl<'b> SchemaParser<'b> {
             ));
         }
 
-        let ast = Ast {
-            name: "".to_owned(),
-            kind,
+        let schema = Schema {
+            ast: Ast {
+                name: "".to_owned(),
+                kind,
+            },
+            params: self.params,
         };
-        Ok(ast)
+        Ok(schema)
     }
 
     fn parse_field_list(&mut self) -> Result<AstKind, SchemaParseError> {
@@ -178,7 +196,20 @@ impl<'b> SchemaParser<'b> {
 
     fn parse_array(&mut self) -> Result<AstKind, SchemaParseError> {
         // LBrace has already been read
-        let len = self.consume_number()?;
+
+        let len = match self
+            .lexer
+            .next()
+            .unwrap_or(Err(SchemaParseError::UnexpectedEof))?
+        {
+            Token::Number(n) => Len::Fixed(n),
+            Token::Ident(s) => {
+                self.params.add_entry(&s);
+                Len::Variable(s)
+            }
+            _ => return Err(SchemaParseError::UnexpectedToken),
+        };
+
         self.consume_symbol(Token::RBrace)?;
         self.consume_symbol(Token::LBracket)?;
         let struct_kind = self.parse_field_list()?;
@@ -299,6 +330,40 @@ enum Token {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+pub(crate) struct ParamStack {
+    stacks: HashMap<String, Vec<usize>>,
+}
+
+impl ParamStack {
+    pub(crate) fn new() -> Self {
+        ParamStack {
+            stacks: HashMap::new(),
+        }
+    }
+
+    pub(crate) fn contains(&self, name: &str) -> bool {
+        self.stacks.contains_key(name)
+    }
+
+    pub(crate) fn add_entry(&mut self, name: &str) {
+        // ignores the original entry even if it existed
+        self.stacks.insert(name.to_string(), Vec::new());
+    }
+
+    pub(crate) fn get_value(&self, name: &str) -> Option<&usize> {
+        self.stacks.get(name).and_then(|stack| stack.last())
+    }
+
+    pub(crate) fn push_value(&mut self, name: &str, value: usize) -> Option<()> {
+        self.stacks.get_mut(name).map(|stack| stack.push(value))
+    }
+
+    pub(crate) fn pop_value(&mut self, name: &str) -> Option<usize> {
+        self.stacks.get_mut(name).and_then(|stack| stack.pop())
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) enum SchemaParseError {
     UnexpectedEof,
     UnexpectedToken,
@@ -321,7 +386,7 @@ mod tests {
     #[test]
     fn parse_empty() {
         let input = "";
-        let mut parser = SchemaParser::new(input.as_bytes());
+        let parser = SchemaParser::new(input.as_bytes());
         let actual = parser.parse();
         let expected = Err(SchemaParseError::UnexpectedEof);
 
@@ -331,14 +396,18 @@ mod tests {
     #[test]
     fn parse_single_field() {
         let input = "fld1:INT16";
-        let mut parser = SchemaParser::new(input.as_bytes());
+        let parser = SchemaParser::new(input.as_bytes());
         let actual = parser.parse();
-        let expected = Ok(Ast {
+        let expected_ast = Ast {
             name: "".to_owned(),
             kind: AstKind::Struct(vec![Ast {
                 name: "fld1".to_owned(),
                 kind: AstKind::Int16,
             }]),
+        };
+        let expected = Ok(Schema {
+            ast: expected_ast,
+            params: ParamStack::new(),
         });
 
         assert_eq!(actual, expected);
@@ -347,9 +416,9 @@ mod tests {
     #[test]
     fn parse_single_struct() {
         let input = "fld1:[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32]";
-        let mut parser = SchemaParser::new(input.as_bytes());
+        let parser = SchemaParser::new(input.as_bytes());
         let actual = parser.parse();
-        let expected = Ok(Ast {
+        let expected_ast = Ast {
             name: "".to_owned(),
             kind: AstKind::Struct(vec![Ast {
                 name: "fld1".to_owned(),
@@ -368,6 +437,10 @@ mod tests {
                     },
                 ]),
             }]),
+        };
+        let expected = Ok(Schema {
+            ast: expected_ast,
+            params: ParamStack::new(),
         });
 
         assert_eq!(actual, expected);
@@ -376,9 +449,9 @@ mod tests {
     #[test]
     fn parse_nested_struct() {
         let input = "fld1:[sfld1:[ssfld1:<4>NSTR,ssfld2:STR,ssfld3:INT32]]";
-        let mut parser = SchemaParser::new(input.as_bytes());
+        let parser = SchemaParser::new(input.as_bytes());
         let actual = parser.parse();
-        let expected = Ok(Ast {
+        let expected_ast = Ast {
             name: "".to_owned(),
             kind: AstKind::Struct(vec![Ast {
                 name: "fld1".to_owned(),
@@ -400,22 +473,26 @@ mod tests {
                     ]),
                 }]),
             }]),
+        };
+        let expected = Ok(Schema {
+            ast: expected_ast,
+            params: ParamStack::new(),
         });
 
         assert_eq!(actual, expected);
     }
 
     #[test]
-    fn parse_single_array() {
+    fn parse_single_fixed_length_array() {
         let input = "fld1:{3}[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32]";
-        let mut parser = SchemaParser::new(input.as_bytes());
+        let parser = SchemaParser::new(input.as_bytes());
         let actual = parser.parse();
-        let expected = Ok(Ast {
+        let expected_ast = Ast {
             name: "".to_owned(),
             kind: AstKind::Struct(vec![Ast {
                 name: "fld1".to_owned(),
                 kind: AstKind::Array(
-                    3,
+                    Len::Fixed(3),
                     Box::new(Ast {
                         name: "[]".to_owned(),
                         kind: AstKind::Struct(vec![
@@ -435,6 +512,58 @@ mod tests {
                     }),
                 ),
             }]),
+        };
+        let expected = Ok(Schema {
+            ast: expected_ast,
+            params: ParamStack::new(),
+        });
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn parse_single_variable_length_array() {
+        let input = "fld1:INT8,fld2:{fld1}[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32]";
+        let parser = SchemaParser::new(input.as_bytes());
+        let actual = parser.parse();
+        let expected_ast = Ast {
+            name: "".to_owned(),
+            kind: AstKind::Struct(vec![
+                Ast {
+                    name: "fld1".to_owned(),
+                    kind: AstKind::Int8,
+                },
+                Ast {
+                    name: "fld2".to_owned(),
+                    kind: AstKind::Array(
+                        Len::Variable("fld1".to_owned()),
+                        Box::new(Ast {
+                            name: "[]".to_owned(),
+                            kind: AstKind::Struct(vec![
+                                Ast {
+                                    name: "sfld1".to_owned(),
+                                    kind: AstKind::NStr(4),
+                                },
+                                Ast {
+                                    name: "sfld2".to_owned(),
+                                    kind: AstKind::Str,
+                                },
+                                Ast {
+                                    name: "sfld3".to_owned(),
+                                    kind: AstKind::Int32,
+                                },
+                            ]),
+                        }),
+                    ),
+                },
+            ]),
+        };
+        let mut params = ParamStack::new();
+        params.add_entry("fld1");
+
+        let expected = Ok(Schema {
+            ast: expected_ast,
+            params,
         });
 
         assert_eq!(actual, expected);

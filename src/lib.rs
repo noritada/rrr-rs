@@ -3,7 +3,7 @@ mod utils;
 mod value;
 mod walker;
 
-use crate::ast::{Ast, AstKind};
+use crate::ast::{Ast, AstKind, Len};
 
 fn visit<'f, F, G>(node: &'f Ast, start_f: &mut F, end_f: &mut G) -> Result<(), Error>
 where
@@ -24,6 +24,10 @@ where
             kind: AstKind::Array(len, element),
             name: _,
         } => {
+            let len = match len {
+                Len::Fixed(n) => n,
+                Len::Variable(_) => panic!("error: variable length array is not supported"),
+            };
             for _ in 0..(*len) {
                 visit(element, start_f, end_f)?;
             }
@@ -52,19 +56,19 @@ impl std::error::Error for Error {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::{SchemaParseError, Size};
+    use crate::ast::{Schema, SchemaParseError, Size};
     use crate::value::{Number, Value, ValueTree};
     use crate::walker::BufWalker;
     use std::cell::RefCell;
     use std::rc::Rc;
 
-    fn ast_without_str() -> Result<Ast, SchemaParseError> {
+    fn schema_without_str() -> Result<Schema, SchemaParseError> {
         let ast = "date:[year:UINT16,month:UINT8,day:UINT8],\
             data:{4}[loc:<4>NSTR,temp:INT16,rhum:UINT16],comment:<16>NSTR";
         ast.parse()
     }
 
-    fn ast_with_str() -> Result<Ast, SchemaParseError> {
+    fn schema_with_str() -> Result<Schema, SchemaParseError> {
         let ast = "date:[year:UINT16,month:UINT8,day:UINT8],\
             data:{4}[loc:STR,temp:INT16,rhum:UINT16],comment:<16>NSTR";
         ast.parse()
@@ -72,7 +76,7 @@ mod tests {
 
     #[test]
     fn visitor_basic_functionality() -> Result<(), Box<dyn std::error::Error>> {
-        let ast = ast_without_str()?;
+        let schema = schema_without_str()?;
 
         let mut pos = 0;
         let mut inc_pos = |node: &Ast| -> Result<(), Error> {
@@ -83,14 +87,14 @@ mod tests {
             };
             Ok(())
         };
-        visit(&ast, &mut inc_pos, &mut |_| Ok(()))?;
+        visit(&schema.ast, &mut inc_pos, &mut |_| Ok(()))?;
         assert_eq!(pos, 52);
         Ok(())
     }
 
     #[test]
     fn visitor_read() -> Result<(), Box<dyn std::error::Error>> {
-        let ast = ast_with_str()?;
+        let schema = schema_with_str()?;
 
         let buf = vec![
             0x07, 0xe6, 0x01, 0x01, 0x54, 0x4f, 0x4b, 0x59, 0x4f, 0x00, 0x00, 0x64, 0x00, 0x0a,
@@ -108,7 +112,7 @@ mod tests {
             }
             Ok(())
         };
-        visit(&ast, &mut read, &mut |_| Ok(()))?;
+        visit(&schema.ast, &mut read, &mut |_| Ok(()))?;
         assert_eq!(walker.pos(), 63);
         assert_eq!(
             vec,
@@ -136,7 +140,7 @@ mod tests {
 
     #[test]
     fn visitor_read_and_structure() -> Result<(), Box<dyn std::error::Error>> {
-        let ast = ast_with_str()?;
+        let schema = schema_with_str()?;
 
         let buf = vec![
             0x07, 0xe6, 0x01, 0x01, 0x54, 0x4f, 0x4b, 0x59, 0x4f, 0x00, 0x00, 0x64, 0x00, 0x0a,
@@ -159,7 +163,7 @@ mod tests {
             }
             Ok(())
         };
-        visit(&ast, &mut add, &mut close)?;
+        visit(&schema.ast, &mut add, &mut close)?;
         assert_eq!(walker.pos(), 63);
         assert_eq!(
             tree.as_ref().borrow_mut().get()?,
@@ -199,7 +203,7 @@ mod tests {
 
     #[test]
     fn visitor_skip() -> Result<(), Box<dyn std::error::Error>> {
-        let ast = ast_with_str()?;
+        let schema = schema_with_str()?;
 
         let buf = vec![
             0x07, 0xe6, 0x01, 0x01, 0x54, 0x4f, 0x4b, 0x59, 0x4f, 0x00, 0x00, 0x64, 0x00, 0x0a,
@@ -210,7 +214,7 @@ mod tests {
         ];
         let mut walker = BufWalker::new(buf.as_slice());
         let mut skip = |node: &Ast| walker.skip(node);
-        visit(&ast, &mut skip, &mut |_| Ok(()))?;
+        visit(&schema.ast, &mut skip, &mut |_| Ok(()))?;
         assert_eq!(walker.pos(), 63);
         Ok(())
     }
