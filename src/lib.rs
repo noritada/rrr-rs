@@ -1,6 +1,7 @@
 mod ast;
 mod utils;
 mod value;
+mod visitor;
 mod walker;
 
 use crate::ast::{Ast, AstKind, Len};
@@ -50,6 +51,12 @@ impl std::fmt::Display for Error {
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         None
+    }
+}
+
+impl From<std::fmt::Error> for Error {
+    fn from(_: std::fmt::Error) -> Self {
+        Self
     }
 }
 
