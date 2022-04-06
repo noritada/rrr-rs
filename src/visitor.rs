@@ -57,14 +57,12 @@ impl<'a, 'f> AstVisitor for SchemaOnelineFormatter<'a, 'f> {
                 write!(self.f, "[")?;
             }
 
-            let mut first = true;
-            for child in children.iter() {
-                if first {
-                    first = false;
-                } else {
+            let mut children = children.iter().peekable();
+            while let Some(child) = children.next() {
+                self.visit(child)?;
+                if children.peek().is_some() {
                     write!(self.f, ",")?;
                 }
-                self.visit(child)?;
             }
 
             if !is_root {
