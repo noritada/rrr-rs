@@ -16,9 +16,9 @@ pub(crate) trait AstVisitor {
     }
 }
 
-pub(crate) struct SchemaOnelineDisplay(Ast);
+pub(crate) struct SchemaOnelineDisplay<'a>(&'a Ast);
 
-impl fmt::Display for SchemaOnelineDisplay {
+impl<'a> fmt::Display for SchemaOnelineDisplay<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut formatter = SchemaOnelineFormatter::new(f);
         let Self(inner) = self;
@@ -114,9 +114,9 @@ impl<'a, 'f> AstVisitor for SchemaOnelineFormatter<'a, 'f> {
     }
 }
 
-pub(crate) struct SchemaTreeDisplay(Ast);
+pub(crate) struct SchemaTreeDisplay<'a>(&'a Ast);
 
-impl fmt::Display for SchemaTreeDisplay {
+impl<'a> fmt::Display for SchemaTreeDisplay<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut formatter = SchemaTreeFormatter::new(f);
         let Self(inner) = self;
@@ -249,7 +249,7 @@ mod tests {
         let input = "fld1:[sfld1:[ssfld1:<4>NSTR,ssfld2:STR,ssfld3:INT32]],\
             fld2:INT8,fld3:{fld1}[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32]";
         let schema = input.parse::<Schema>().unwrap();
-        let output = format!("{}", SchemaOnelineDisplay(schema.ast));
+        let output = format!("{}", SchemaOnelineDisplay(&schema.ast));
 
         assert_eq!(output, input);
     }
@@ -259,7 +259,7 @@ mod tests {
         let input = "fld1:[sfld1:[ssfld1:<4>NSTR,ssfld2:STR,ssfld3:INT32]],\
             fld2:INT8,fld3:{fld1}[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32]";
         let schema = input.parse::<Schema>().unwrap();
-        let actual = format!("{}", SchemaTreeDisplay(schema.ast));
+        let actual = format!("{}", SchemaTreeDisplay(&schema.ast));
         let expected = "/: Struct
 ├── fld1: Struct
 │   └── sfld1: Struct

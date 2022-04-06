@@ -7,12 +7,20 @@ pub(crate) struct Schema {
     pub(crate) params: ParamStack,
 }
 
+impl TryFrom<&[u8]> for Schema {
+    type Error = SchemaParseError;
+
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        let parser = SchemaParser::new(bytes);
+        parser.parse()
+    }
+}
+
 impl FromStr for Schema {
     type Err = SchemaParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parser = SchemaParser::new(s.as_bytes());
-        parser.parse()
+        <Self>::try_from(s.as_bytes())
     }
 }
 
