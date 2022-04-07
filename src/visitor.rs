@@ -1,5 +1,6 @@
 use crate::ast::{Ast, AstKind, Len};
 use crate::Error;
+use std::borrow::Cow;
 use std::fmt;
 
 pub(crate) trait AstVisitor {
@@ -238,6 +239,43 @@ impl<'a, 'f> AstVisitor for SchemaTreeFormatter<'a, 'f> {
     }
 }
 
+fn json_escape_str(input: &str) -> Cow<str> {
+    for (i, byte) in input.as_bytes().iter().enumerate() {
+        if json_escape_byte(byte).is_some() {
+            // assuming that 1 byte would be converted to 2 bytes
+            let mut escaped_string = String::with_capacity(input.len() * 2);
+            escaped_string.push_str(&input[..i]);
+            for byte in input.as_bytes().iter() {
+                match json_escape_byte(byte) {
+                    Some(b'u') => escaped_string.push_str(&format!("\\u{:04X}", byte)),
+                    Some(b) => {
+                        escaped_string.push('\\');
+                        escaped_string.push(b as char);
+                    }
+                    None => escaped_string.push(*byte as char),
+                }
+            }
+            return Cow::Owned(escaped_string);
+        }
+    }
+
+    Cow::Borrowed(input)
+}
+
+fn json_escape_byte(input: &u8) -> Option<u8> {
+    // see https://datatracker.ietf.org/doc/html/rfc8259
+    match *input {
+        0x08 => Some(b'b'),
+        0x09 => Some(b't'),
+        0x0a => Some(b'n'),
+        0x0c => Some(b'f'),
+        0x0d => Some(b'r'),
+        0x00..=0x1f | 0x7f => Some(b'u'), // should be '\uXXXX'
+        0x22 => Some(b'"'),
+        0x5c => Some(b'\\'),
+        _ => None,
+    }
+}
 mod tests {
     use super::*;
     use crate::ast::Schema;
@@ -272,6 +310,25 @@ mod tests {
         └── sfld3: INT32
 ";
 
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn json_escape() {
+        let input: String = (0x00u8..0x80u8).map(|b| b as char).collect();
+        let actual = json_escape_str(input.as_str());
+        let expected = vec![
+            r##"\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\u000B\f\r\u000E\u000F"##,
+            r##"\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\u001B\u001C\u001D\u001E\u001F"##,
+            r##" !\"#$%&'()*+,-./0123456789:;<=>?"##,
+            r##"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"##,
+            r##"`abcdefghijklmnopqrstuvwxyz{|}~\u007F"##,
+        ];
+        let expected = expected
+            .iter()
+            .map(|s| s.to_owned())
+            .collect::<Vec<_>>()
+            .join("");
         assert_eq!(actual, expected);
     }
 }
