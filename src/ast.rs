@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) struct Schema {
-    pub(crate) ast: Ast,
-    pub(crate) params: ParamStack,
+pub struct Schema {
+    pub ast: Ast,
+    pub params: ParamStack,
 }
 
 impl TryFrom<&[u8]> for Schema {
@@ -25,9 +25,9 @@ impl FromStr for Schema {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) struct Ast {
-    pub(crate) kind: AstKind,
-    pub(crate) name: String,
+pub struct Ast {
+    pub kind: AstKind,
+    pub name: String,
 }
 
 impl Ast {
@@ -50,7 +50,7 @@ impl Ast {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) enum AstKind {
+pub enum AstKind {
     Int8,
     Int16,
     Int32,
@@ -66,7 +66,7 @@ pub(crate) enum AstKind {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) enum Len {
+pub enum Len {
     Fixed(usize),
     Variable(String),
 }
@@ -338,7 +338,7 @@ enum Token {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) struct ParamStack {
+pub struct ParamStack {
     stacks: HashMap<String, Vec<usize>>,
 }
 
@@ -372,7 +372,7 @@ impl ParamStack {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) enum SchemaParseError {
+pub enum SchemaParseError {
     UnexpectedEof,
     UnexpectedToken,
     UnknownToken,

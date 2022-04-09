@@ -4,7 +4,10 @@ mod value;
 mod visitor;
 mod walker;
 
-use crate::ast::{Ast, AstKind, Len};
+pub use crate::{
+    ast::{Ast, AstKind, Len, Schema},
+    visitor::{AstVisitor, SchemaOnelineDisplay, SchemaTreeDisplay},
+};
 
 fn visit<'f, F, G>(node: &'f Ast, start_f: &mut F, end_f: &mut G) -> Result<(), Error>
 where
@@ -40,7 +43,7 @@ where
 }
 
 #[derive(Debug, Clone, PartialEq)]
-struct Error;
+pub struct Error;
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {

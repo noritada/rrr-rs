@@ -3,7 +3,7 @@ use crate::Error;
 use std::borrow::Cow;
 use std::fmt;
 
-pub(crate) trait AstVisitor {
+pub trait AstVisitor {
     fn visit_struct(&mut self, node: &Ast) -> Result<(), Error>;
     fn visit_array(&mut self, node: &Ast) -> Result<(), Error>;
     fn visit_builtin(&mut self, node: &Ast) -> Result<(), Error>;
@@ -17,7 +17,7 @@ pub(crate) trait AstVisitor {
     }
 }
 
-pub(crate) struct SchemaOnelineDisplay<'a>(&'a Ast);
+pub struct SchemaOnelineDisplay<'a>(pub &'a Ast);
 
 impl<'a> fmt::Display for SchemaOnelineDisplay<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -113,7 +113,7 @@ impl<'a, 'f> AstVisitor for SchemaOnelineFormatter<'a, 'f> {
     }
 }
 
-pub(crate) struct SchemaTreeDisplay<'a>(&'a Ast);
+pub struct SchemaTreeDisplay<'a>(pub &'a Ast);
 
 impl<'a> fmt::Display for SchemaTreeDisplay<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
