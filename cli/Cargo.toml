@@ -1,0 +1,9 @@
+[package]
+name = "rrr-cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "3.1", features = ["cargo"] }
+rrr = { path = "..", version = "=0.1.0" }
