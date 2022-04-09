@@ -1,4 +1,6 @@
 mod command;
+mod common;
+mod visitor;
 
 use anyhow::Result;
 use clap::{crate_name, crate_version, Command};

@@ -1,6 +1,7 @@
-use crate::read_from_file;
+use crate::{read_from_file, visitor::FieldCounter};
 use anyhow::Result;
 use clap::{Arg, ArgMatches, Command};
+use console::Term;
 use rrr::{Schema, SchemaOnelineDisplay, SchemaTreeDisplay};
 
 pub(crate) fn cli() -> Command<'static> {
@@ -21,6 +22,13 @@ pub(crate) fn exec(args: &ArgMatches) -> Result<()> {
 
     let schema: Schema = buf.as_slice().try_into()?;
     if args.is_present("tree") {
+        let term = Term::stdout();
+        let (height, _width) = term.size();
+        let num_lines = FieldCounter::count(&schema.ast)?;
+        if num_lines > height.into() {
+            crate::common::start_pager();
+        }
+
         print!("{}", SchemaTreeDisplay(&schema.ast))
     } else {
         println!("{}", SchemaOnelineDisplay(&schema.ast))
