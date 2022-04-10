@@ -20,7 +20,7 @@ impl Value {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Number {
     Int8(i8),
     Int16(i16),
@@ -30,6 +30,23 @@ pub(crate) enum Number {
     UInt32(u32),
     Float32(f32),
     Float64(f64),
+}
+
+impl TryInto<usize> for Number {
+    type Error = Error;
+
+    fn try_into(self) -> Result<usize, Self::Error> {
+        match self {
+            Number::Int8(n) => n.try_into().map_err(|_| Error),
+            Number::Int16(n) => n.try_into().map_err(|_| Error),
+            Number::Int32(n) => n.try_into().map_err(|_| Error),
+            Number::UInt8(n) => n.try_into().map_err(|_| Error),
+            Number::UInt16(n) => n.try_into().map_err(|_| Error),
+            Number::UInt32(n) => n.try_into().map_err(|_| Error),
+            Number::Float32(_) => Err(Error),
+            Number::Float64(_) => Err(Error),
+        }
+    }
 }
 
 macro_rules! add_impl_for_types {
