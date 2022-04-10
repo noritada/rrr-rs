@@ -1,3 +1,4 @@
+use console::Style;
 use rrr::{Ast, AstKind, AstVisitor, Error, Len};
 use std::fmt;
 
@@ -112,7 +113,8 @@ impl<'a, 'f> SchemaTreeFormatter<'a, 'f> {
     }
 
     fn write_type(&mut self, name: &str, kind: &AstKind) -> fmt::Result {
-        write!(self.f, "{}: ", name)?;
+        let yellow = Style::new().yellow().bold();
+        write!(self.f, "{}: ", yellow.apply_to(name))?;
         match kind {
             AstKind::Int8 => write!(self.f, "INT8"),
             AstKind::Int16 => write!(self.f, "INT16"),
@@ -188,6 +190,7 @@ impl<'a, 'f> AstVisitor for SchemaTreeFormatter<'a, 'f> {
 
 mod tests {
     use super::*;
+    use console;
     use rrr::Schema;
 
     #[test]
@@ -196,6 +199,7 @@ mod tests {
             fld2:INT8,fld3:{fld1}[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32]";
         let schema = input.parse::<Schema>().unwrap();
         let actual = format!("{}", SchemaTreeDisplay(&schema.ast));
+        let actual = console::strip_ansi_codes(&actual);
         let expected = "/: Struct
 ├── fld1: Struct
 │   └── sfld1: Struct

@@ -25,11 +25,17 @@ pub(crate) fn exec(args: &ArgMatches) -> Result<()> {
 
     let schema: Schema = buf.as_slice().try_into()?;
     if args.is_present("tree") {
+        let user_attended = console::user_attended();
+
         let term = Term::stdout();
         let (height, _width) = term.size();
         let num_lines = FieldCounter::count(&schema.ast)?;
         if num_lines > height.into() {
             crate::common::start_pager();
+        }
+
+        if user_attended {
+            console::set_colors_enabled(true);
         }
 
         print!("{}", SchemaTreeDisplay(&schema.ast))
