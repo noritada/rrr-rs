@@ -116,13 +116,13 @@ impl<'a, 'f> AstVisitor for SchemaOnelineFormatter<'a, 'f> {
     }
 }
 
-struct JsonDisplay<'s, 'b> {
+pub struct JsonDisplay<'s, 'b> {
     schema: &'s Schema,
     buf: &'b [u8],
 }
 
 impl<'s, 'b> JsonDisplay<'s, 'b> {
-    fn new(schema: &'s Schema, buf: &'b [u8]) -> Self {
+    pub fn new(schema: &'s Schema, buf: &'b [u8]) -> Self {
         Self { schema, buf }
     }
 }

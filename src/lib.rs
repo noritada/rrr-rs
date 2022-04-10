@@ -7,7 +7,7 @@ mod walker;
 
 pub use crate::{
     ast::{Ast, AstKind, Len, Schema},
-    visitor::{AstVisitor, SchemaOnelineDisplay},
+    visitor::{AstVisitor, JsonDisplay, SchemaOnelineDisplay},
 };
 
 fn visit<'f, F, G>(node: &'f Ast, start_f: &mut F, end_f: &mut G) -> Result<(), Error>

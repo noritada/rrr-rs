@@ -3,13 +3,13 @@ use crate::utils::FromBytes;
 use crate::value::Value;
 use crate::Error;
 
-pub(crate) struct BufWalker<'w> {
+pub struct BufWalker<'w> {
     buf: &'w [u8],
     pos: usize,
 }
 
 impl<'w> BufWalker<'w> {
-    pub(crate) fn new(buf: &'w [u8]) -> Self {
+    pub fn new(buf: &'w [u8]) -> Self {
         BufWalker { buf, pos: 0 }
     }
 
