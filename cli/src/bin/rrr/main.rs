@@ -2,9 +2,9 @@ mod command;
 mod common;
 mod visitor;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use clap::{crate_name, crate_version, Command};
-use std::io::Read;
+use rrr::{DataReader, Schema};
 
 fn app() -> Command<'static> {
     Command::new(crate_name!())
@@ -13,14 +13,12 @@ fn app() -> Command<'static> {
         .subcommands(command::cli())
 }
 
-pub(crate) fn read_from_file(fname: &str) -> std::io::Result<Vec<u8>> {
+pub(crate) fn read_from_file(fname: &str) -> Result<(Schema, Vec<u8>)> {
     let input_path = std::path::PathBuf::from(fname);
     let f = std::fs::File::open(input_path)?;
-    let mut f = std::io::BufReader::new(f);
-    let mut buf = Vec::new();
-    f.read_to_end(&mut buf)?;
-
-    Ok(buf)
+    let f = std::io::BufReader::new(f);
+    let mut f = DataReader::new(f);
+    f.read().map_err(|e| anyhow!(e))
 }
 
 fn main() -> Result<()> {

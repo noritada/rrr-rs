@@ -21,9 +21,8 @@ pub(crate) fn cli() -> Command<'static> {
 
 pub(crate) fn exec(args: &ArgMatches) -> Result<()> {
     let fname = args.value_of("file").unwrap();
-    let buf = read_from_file(fname)?;
+    let (schema, _) = read_from_file(fname)?;
 
-    let schema: Schema = buf.as_slice().try_into()?;
     if args.is_present("tree") {
         let user_attended = console::user_attended();
 
