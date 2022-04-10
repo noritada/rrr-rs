@@ -1,5 +1,6 @@
 mod ast;
 mod param;
+mod reader;
 mod utils;
 mod value;
 mod visitor;
@@ -7,6 +8,7 @@ mod walker;
 
 pub use crate::{
     ast::{Ast, AstKind, Len, Schema},
+    reader::DataReader,
     visitor::{AstVisitor, JsonDisplay, SchemaOnelineDisplay},
 };
 
@@ -60,6 +62,12 @@ impl std::error::Error for Error {
 
 impl From<std::fmt::Error> for Error {
     fn from(_: std::fmt::Error) -> Self {
+        Self
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(_: std::io::Error) -> Self {
         Self
     }
 }
