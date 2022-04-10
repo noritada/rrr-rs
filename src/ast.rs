@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use crate::param::ParamStack;
 use std::str::FromStr;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -335,40 +335,6 @@ enum Token {
     RAngleBracket,
     LBrace,
     RBrace,
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct ParamStack {
-    stacks: HashMap<String, Vec<usize>>,
-}
-
-impl ParamStack {
-    pub(crate) fn new() -> Self {
-        ParamStack {
-            stacks: HashMap::new(),
-        }
-    }
-
-    pub(crate) fn contains(&self, name: &str) -> bool {
-        self.stacks.contains_key(name)
-    }
-
-    pub(crate) fn add_entry(&mut self, name: &str) {
-        // ignores the original entry even if it existed
-        self.stacks.insert(name.to_string(), Vec::new());
-    }
-
-    pub(crate) fn get_value(&self, name: &str) -> Option<&usize> {
-        self.stacks.get(name).and_then(|stack| stack.last())
-    }
-
-    pub(crate) fn push_value(&mut self, name: &str, value: usize) -> Option<()> {
-        self.stacks.get_mut(name).map(|stack| stack.push(value))
-    }
-
-    pub(crate) fn pop_value(&mut self, name: &str) -> Option<usize> {
-        self.stacks.get_mut(name).and_then(|stack| stack.pop())
-    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
