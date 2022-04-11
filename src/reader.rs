@@ -1,7 +1,9 @@
 use crate::ast::Schema;
 use crate::Error;
+use bzip2::read::BzDecoder;
+use flate2::read::GzDecoder;
 use std::collections::HashMap;
-use std::io::{BufRead, Seek, SeekFrom};
+use std::io::{BufRead, Read, Seek, SeekFrom};
 
 pub struct DataReader<R> {
     inner: R,
@@ -26,24 +28,12 @@ where
         self.inner.seek(SeekFrom::Start(0))?;
         self.find_magic()?;
         let map = self.read_header_fields()?;
-        let body = self.read_body()?;
 
         let schema = map.get("format".as_bytes()).ok_or(Error)?;
         let schema: Schema = schema.as_slice().try_into().map_err(|_| Error)?;
 
-        let body = match map.get("compress_type".as_bytes()) {
-            None => body,
-            Some(compress_type) => {
-                let compress_type = String::from_utf8_lossy(compress_type);
-                if compress_type == "gzip" {
-                    unimplemented!()
-                }
-                if compress_type == "bzip2" {
-                    unimplemented!()
-                }
-                return Err(Error);
-            }
-        };
+        let compress_type = map.get("compress_type".as_bytes());
+        let body = self.read_body(&compress_type)?;
 
         Ok((schema, body))
     }
@@ -103,9 +93,25 @@ where
         Ok(map)
     }
 
-    fn read_body(&mut self) -> Result<Vec<u8>, Error> {
+    fn read_body(&mut self, compress_type: &Option<&Vec<u8>>) -> Result<Vec<u8>, Error> {
         let mut buf = Vec::new();
-        self.inner.read_to_end(&mut buf)?;
+        let buf = match compress_type.map(|s| s.as_slice()) {
+            None => {
+                self.inner.read_to_end(&mut buf)?;
+                buf
+            }
+            Some(b"gzip") => {
+                let mut reader = GzDecoder::new(&mut self.inner);
+                reader.read_to_end(&mut buf)?;
+                buf
+            }
+            Some(b"bzip2") => {
+                let mut reader = BzDecoder::new(&mut self.inner);
+                reader.read_to_end(&mut buf)?;
+                buf
+            }
+            _ => return Err(Error),
+        };
         Ok(buf)
     }
 }
