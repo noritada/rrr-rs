@@ -1,7 +1,5 @@
-use pager::Pager;
-
 #[cfg(unix)]
-use which::which;
+use {pager::Pager, which::which};
 
 #[cfg(unix)]
 pub fn start_pager() {
