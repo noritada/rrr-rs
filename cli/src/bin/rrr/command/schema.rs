@@ -5,7 +5,7 @@ use crate::{
 use anyhow::Result;
 use clap::{Arg, ArgMatches, Command};
 use console::Term;
-use rrr::{Schema, SchemaOnelineDisplay};
+use rrr::SchemaOnelineDisplay;
 
 pub(crate) fn cli() -> Command<'static> {
     Command::new("schema")

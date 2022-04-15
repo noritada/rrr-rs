@@ -1,7 +1,7 @@
 use crate::read_from_file;
 use anyhow::Result;
 use clap::{Arg, ArgMatches, Command};
-use rrr::{JsonDisplay, Schema};
+use rrr::JsonDisplay;
 
 pub(crate) fn cli() -> Command<'static> {
     Command::new("dump")

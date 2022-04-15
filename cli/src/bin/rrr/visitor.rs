@@ -67,7 +67,7 @@ impl<'a> fmt::Display for SchemaTreeDisplay<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut formatter = SchemaTreeFormatter::new(f);
         let Self(inner) = self;
-        formatter.visit(&inner).unwrap();
+        formatter.visit(inner).unwrap();
         Ok(())
     }
 }
@@ -88,7 +88,7 @@ impl<'a, 'f> SchemaTreeFormatter<'a, 'f> {
     fn write_line(&mut self, name: &str, kind: &AstKind) -> fmt::Result {
         self.write_branch()?;
         self.write_type(name, kind)?;
-        write!(self.f, "\n")
+        writeln!(self.f)
     }
 
     fn write_branch(&mut self) -> fmt::Result {
@@ -100,12 +100,10 @@ impl<'a, 'f> SchemaTreeFormatter<'a, 'f> {
                 } else {
                     "    "
                 }
+            } else if *has_next_sibling {
+                "├── "
             } else {
-                if *has_next_sibling {
-                    "├── "
-                } else {
-                    "└── "
-                }
+                "└── "
             };
             write!(self.f, "{}", symbol)?;
         }
@@ -190,7 +188,6 @@ impl<'a, 'f> AstVisitor for SchemaTreeFormatter<'a, 'f> {
 
 mod tests {
     use super::*;
-    use console;
     use rrr::Schema;
 
     #[test]
