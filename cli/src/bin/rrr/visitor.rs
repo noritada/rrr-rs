@@ -186,6 +186,7 @@ impl<'a, 'f> AstVisitor for SchemaTreeFormatter<'a, 'f> {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
     use rrr::Schema;

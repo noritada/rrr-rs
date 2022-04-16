@@ -280,6 +280,8 @@ fn json_escape_byte(input: &u8) -> Option<u8> {
         _ => None,
     }
 }
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::ast::Schema;
