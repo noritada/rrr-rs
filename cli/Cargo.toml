@@ -5,9 +5,14 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1"
+aws-config = "0.9"
+aws-sdk-s3 = "0.9"
+bytes = "1"
 clap = { version = "3.1", features = ["cargo"] }
 console = "0.15"
 rrr = { path = "..", version = "=0.1.0" }
+tokio = { version = "1", features = ["full"] }
+url = "2"
 
 [target.'cfg(unix)'.dependencies]
 pager = "0.16"

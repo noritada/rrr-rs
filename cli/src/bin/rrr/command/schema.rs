@@ -1,5 +1,5 @@
 use crate::{
-    read_from_file,
+    common::read_from_source,
     visitor::{FieldCounter, SchemaTreeDisplay},
 };
 use anyhow::Result;
@@ -19,9 +19,9 @@ pub(crate) fn cli() -> Command<'static> {
         .arg(Arg::new("file").required(true))
 }
 
-pub(crate) fn exec(args: &ArgMatches) -> Result<()> {
+pub(crate) async fn exec(args: &ArgMatches) -> Result<()> {
     let fname = args.value_of("file").unwrap();
-    let (schema, _) = read_from_file(fname)?;
+    let (schema, _) = read_from_source(fname, false).await?;
 
     if args.is_present("tree") {
         let user_attended = console::user_attended();

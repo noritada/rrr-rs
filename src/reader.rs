@@ -24,7 +24,7 @@ impl<R> DataReader<R>
 where
     R: BufRead + Seek,
 {
-    pub fn read(&mut self) -> Result<(Schema, Vec<u8>), Error> {
+    pub fn read(&mut self, with_body: bool) -> Result<(Schema, Vec<u8>), Error> {
         self.inner.seek(SeekFrom::Start(0))?;
         self.find_magic()?;
         let map = self.read_header_fields()?;
@@ -32,8 +32,12 @@ where
         let schema = map.get("format".as_bytes()).ok_or(Error)?;
         let schema: Schema = schema.as_slice().try_into().map_err(|_| Error)?;
 
-        let compress_type = map.get("compress_type".as_bytes());
-        let body = self.read_body(&compress_type)?;
+        let body = if with_body {
+            let compress_type = map.get("compress_type".as_bytes());
+            self.read_body(&compress_type)?
+        } else {
+            Vec::new()
+        };
 
         Ok((schema, body))
     }
