@@ -16,11 +16,15 @@ pub(crate) fn cli() -> Command<'static> {
                 .short('t')
                 .long("tree"),
         )
-        .arg(Arg::new("file").required(true))
+        .arg(
+            Arg::new("PATH_OR_URI")
+                .help("Path or S3 URI of the file")
+                .required(true),
+        )
 }
 
 pub(crate) async fn exec(args: &ArgMatches) -> Result<()> {
-    let fname = args.value_of("file").unwrap();
+    let fname = args.value_of("PATH_OR_URI").unwrap();
     let (schema, _) = read_from_source(fname, false).await?;
 
     if args.is_present("tree") {
