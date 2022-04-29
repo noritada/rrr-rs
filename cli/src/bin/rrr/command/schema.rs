@@ -17,6 +17,13 @@ pub(crate) fn cli() -> Command<'static> {
                 .long("tree"),
         )
         .arg(
+            Arg::new("N")
+                .long("bytes")
+                .short('b')
+                .help("Read only the first N bytes from the S3 bucket")
+                .default_value("4096"),
+        )
+        .arg(
             Arg::new("PATH_OR_URI")
                 .help("Path or S3 URI of the file")
                 .required(true),
@@ -25,7 +32,8 @@ pub(crate) fn cli() -> Command<'static> {
 
 pub(crate) async fn exec(args: &ArgMatches) -> Result<()> {
     let fname = args.value_of("PATH_OR_URI").unwrap();
-    let (schema, _) = read_from_source(fname, false).await?;
+    let n_bytes: usize = args.value_of("n_bytes").unwrap().parse()?;
+    let (schema, _) = read_from_source(fname, false, Some(n_bytes)).await?;
 
     if args.is_present("tree") {
         let user_attended = console::user_attended();

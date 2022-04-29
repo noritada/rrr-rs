@@ -15,7 +15,7 @@ pub(crate) fn cli() -> Command<'static> {
 
 pub(crate) async fn exec(args: &ArgMatches) -> Result<()> {
     let fname = args.value_of("PATH_OR_URI").unwrap();
-    let (schema, body_buf) = read_from_source(fname, true).await?;
+    let (schema, body_buf) = read_from_source(fname, true, None).await?;
 
     println!("{}", JsonDisplay::new(&schema, &body_buf));
 
