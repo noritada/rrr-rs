@@ -7,10 +7,11 @@ pub(crate) fn cli() -> Vec<Command<'static>> {
 
 pub(crate) async fn dispatch(matches: ArgMatches) -> Result<()> {
     match matches.subcommand() {
-        Some(("dump", args)) => dump::exec(args).await,
-        Some(("schema", args)) => schema::exec(args).await,
+        Some(("dump", args)) => dump::exec(args).await?,
+        Some(("schema", args)) => schema::exec(args).await?,
         _ => unreachable!(),
     }
+    std::process::exit(0)
 }
 
 mod dump;
