@@ -9,6 +9,7 @@ mod walker;
 pub use crate::{
     ast::{Ast, AstKind, Len, Schema},
     reader::DataReader,
+    utils::json_escape_str,
     visitor::{AstVisitor, JsonDisplay, SchemaOnelineDisplay},
 };
 

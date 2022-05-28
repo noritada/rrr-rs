@@ -33,7 +33,7 @@ pub(crate) fn cli() -> Command<'static> {
 pub(crate) async fn exec(args: &ArgMatches) -> Result<()> {
     let fname = args.value_of("PATH_OR_URI").unwrap();
     let n_bytes: usize = args.value_of("n_bytes").unwrap().parse()?;
-    let (schema, _) = read_from_source(fname, false, Some(n_bytes)).await?;
+    let (schema, _, _) = read_from_source(fname, false, Some(n_bytes)).await?;
 
     if args.is_present("tree") {
         let user_attended = console::user_attended();

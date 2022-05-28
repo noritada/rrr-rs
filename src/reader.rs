@@ -24,7 +24,10 @@ impl<R> DataReader<R>
 where
     R: BufRead + Seek,
 {
-    pub fn read(&mut self, with_body: bool) -> Result<(Schema, Vec<u8>), Error> {
+    pub fn read(
+        &mut self,
+        with_body: bool,
+    ) -> Result<(Schema, HashMap<Vec<u8>, Vec<u8>>, Vec<u8>), Error> {
         self.inner.seek(SeekFrom::Start(0))?;
         self.find_magic()?;
         let map = self.read_header_fields()?;
@@ -39,7 +42,7 @@ where
             Vec::new()
         };
 
-        Ok((schema, body))
+        Ok((schema, map, body))
     }
 
     fn find_magic(&mut self) -> Result<usize, Error> {

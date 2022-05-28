@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
 use rrr::{DataReader, Schema};
+use std::collections::HashMap;
 use std::io::{BufRead, Seek};
 
 #[cfg(unix)]
@@ -9,7 +10,7 @@ pub(crate) async fn read_from_source(
     source: &str,
     with_body: bool,
     n_bytes: Option<usize>,
-) -> Result<(Schema, Vec<u8>)> {
+) -> Result<(Schema, HashMap<Vec<u8>, Vec<u8>>, Vec<u8>)> {
     if source[0..5] == "s3://"[..] {
         read_from_s3(source, with_body, n_bytes).await
     } else {
@@ -21,7 +22,7 @@ async fn read_from_s3(
     url: &str,
     with_body: bool,
     n_bytes: Option<usize>,
-) -> Result<(Schema, Vec<u8>)> {
+) -> Result<(Schema, HashMap<Vec<u8>, Vec<u8>>, Vec<u8>)> {
     let url = url::Url::parse(url)?;
 
     let bucket_name = if let Some(url::Host::Domain(s)) = url.host() {
@@ -58,14 +59,17 @@ async fn download_s3_object(
     Ok(data.into_bytes())
 }
 
-fn read_from_file(fname: &str) -> Result<(Schema, Vec<u8>)> {
+fn read_from_file(fname: &str) -> Result<(Schema, HashMap<Vec<u8>, Vec<u8>>, Vec<u8>)> {
     let input_path = std::path::PathBuf::from(fname);
     let f = std::fs::File::open(input_path)?;
     let f = std::io::BufReader::new(f);
     read_from_reader(f, true)
 }
 
-fn read_from_reader<R>(reader: R, with_body: bool) -> Result<(Schema, Vec<u8>)>
+fn read_from_reader<R>(
+    reader: R,
+    with_body: bool,
+) -> Result<(Schema, HashMap<Vec<u8>, Vec<u8>>, Vec<u8>)>
 where
     R: BufRead + Seek,
 {
