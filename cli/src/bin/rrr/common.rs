@@ -9,7 +9,7 @@ use {pager::Pager, which::which};
 pub(crate) async fn read_from_source(
     source: &str,
     with_body: bool,
-    n_bytes: Option<usize>,
+    n_bytes: Option<&usize>,
 ) -> Result<(Schema, HashMap<Vec<u8>, Vec<u8>>, Vec<u8>)> {
     if source[0..5] == "s3://"[..] {
         read_from_s3(source, with_body, n_bytes).await
@@ -21,7 +21,7 @@ pub(crate) async fn read_from_source(
 async fn read_from_s3(
     url: &str,
     with_body: bool,
-    n_bytes: Option<usize>,
+    n_bytes: Option<&usize>,
 ) -> Result<(Schema, HashMap<Vec<u8>, Vec<u8>>, Vec<u8>)> {
     let url = url::Url::parse(url)?;
 
@@ -41,7 +41,7 @@ async fn read_from_s3(
 async fn download_s3_object(
     bucket_name: &str,
     key: &str,
-    n_bytes: Option<usize>,
+    n_bytes: Option<&usize>,
 ) -> Result<bytes::Bytes> {
     let config = aws_config::load_from_env().await;
     let client = aws_sdk_s3::Client::new(&config);

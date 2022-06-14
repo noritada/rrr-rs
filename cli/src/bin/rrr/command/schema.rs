@@ -3,39 +3,28 @@ use crate::{
     visitor::{FieldCounter, SchemaTreeDisplay},
 };
 use anyhow::Result;
-use clap::{Arg, ArgMatches, Command};
+use clap::{arg, command, ArgMatches, Command};
 use console::Term;
 use rrr::SchemaOnelineDisplay;
 
 pub(crate) fn cli() -> Command<'static> {
-    Command::new("schema")
+    command!("schema")
         .about("Display the schema of the specified file")
+        .arg(arg!(-t --tree "Display in the tree format"))
         .arg(
-            Arg::new("tree")
-                .help("Display in the tree format")
-                .short('t')
-                .long("tree"),
+            arg!(N: -b --bytes "Read only the first N bytes from the S3 bucket")
+                .default_value("4096")
+                .value_parser(clap::value_parser!(usize)),
         )
-        .arg(
-            Arg::new("N")
-                .long("bytes")
-                .short('b')
-                .help("Read only the first N bytes from the S3 bucket")
-                .default_value("4096"),
-        )
-        .arg(
-            Arg::new("PATH_OR_URI")
-                .help("Path or S3 URI of the file")
-                .required(true),
-        )
+        .arg(arg!(<PATH_OR_URI> "Path or S3 URI of the file").required(true))
 }
 
 pub(crate) async fn exec(args: &ArgMatches) -> Result<()> {
-    let fname = args.value_of("PATH_OR_URI").unwrap();
-    let n_bytes: usize = args.value_of("N").unwrap().parse()?;
+    let fname = args.get_one::<String>("PATH_OR_URI").unwrap();
+    let n_bytes = args.get_one::<usize>("N").unwrap();
     let (schema, _, _) = read_from_source(fname, false, Some(n_bytes)).await?;
 
-    if args.is_present("tree") {
+    if args.contains_id("tree") {
         let user_attended = console::user_attended();
 
         let term = Term::stdout();
