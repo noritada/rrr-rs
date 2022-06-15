@@ -1,12 +1,12 @@
 use crate::common::read_from_source;
 use anyhow::Result;
-use clap::{arg, command, ArgMatches, Command};
+use clap::{arg, ArgMatches, Command};
 use rrr::json_escape_str;
 use std::collections::HashMap;
 use std::fmt;
 
 pub(crate) fn cli() -> Command<'static> {
-    command!("header")
+    Command::new("header")
         .about("Display the header of the specified file")
         .arg(
             arg!(N: -b --bytes "Read only the first N bytes from the S3 bucket")

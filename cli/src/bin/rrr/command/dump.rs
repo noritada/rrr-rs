@@ -1,10 +1,10 @@
 use crate::common::read_from_source;
 use anyhow::Result;
-use clap::{arg, command, ArgMatches, Command};
+use clap::{arg, ArgMatches, Command};
 use rrr::JsonDisplay;
 
 pub(crate) fn cli() -> Command<'static> {
-    command!("dump")
+    Command::new("dump")
         .about("Dump the data of the specified file")
         .arg(arg!(<PATH_OR_URI> "Path or S3 URI of the file").required(true))
 }
