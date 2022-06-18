@@ -5,8 +5,8 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1"
-aws-config = "0.12"
-aws-sdk-s3 = "0.12"
+aws-config = "0.13"
+aws-sdk-s3 = "0.13"
 bytes = "1"
 clap = { version = "3.2", features = ["cargo"] }
 console = "0.15"
