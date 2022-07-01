@@ -26,7 +26,7 @@ impl<'a> fmt::Display for SchemaOnelineDisplay<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut formatter = SchemaOnelineFormatter::new(f);
         let Self(inner) = self;
-        formatter.visit(&inner).unwrap();
+        formatter.visit(inner).unwrap();
         Ok(())
     }
 }
@@ -53,7 +53,7 @@ impl<'a, 'f> AstVisitor for SchemaOnelineFormatter<'a, 'f> {
         } = node
         {
             let is_array_element = name == "[]";
-            let is_root = name == "";
+            let is_root = name.is_empty();
             if !is_array_element && !is_root {
                 self.write_name(name)?;
             }
@@ -226,8 +226,8 @@ impl<'a, 'f, 'b> AstVisitor for JsonSerializer<'a, 'f, 'b> {
     fn visit_builtin(&mut self, node: &Ast) -> Result<(), Error> {
         let value = self.walker.read(node)?;
         match value {
-            Value::Number(ref n) => self.write_number(&n)?,
-            Value::String(ref s) => self.write_string(&s)?,
+            Value::Number(ref n) => self.write_number(n)?,
+            Value::String(ref s) => self.write_string(s)?,
             _ => unreachable!(),
         };
 

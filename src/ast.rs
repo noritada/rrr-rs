@@ -134,7 +134,7 @@ impl<'b> SchemaParser<'b> {
             }
         }
 
-        if members.len() == 0 {
+        if members.is_empty() {
             return Err(SchemaParseError::UnexpectedEof);
         }
 

@@ -102,10 +102,8 @@ impl ValueTree {
             if new_layer_created {
                 self.heads.push(value_rc);
             }
-        } else {
-            if new_layer_created {
-                self.heads.push(value_rc);
-            }
+        } else if new_layer_created {
+            self.heads.push(value_rc);
         }
 
         Ok(())
