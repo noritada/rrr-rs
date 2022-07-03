@@ -432,16 +432,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_empty() {
-        let input = "";
-        let parser = SchemaParser::new(input.as_bytes());
-        let actual = parser.parse();
-        let expected = Err(SchemaParseError::unexpected_eof(Location(0, 0)));
-
-        assert_eq!(actual, expected);
-    }
-
-    #[test]
     fn parse_single_field() {
         let input = "fld1:INT16";
         let parser = SchemaParser::new(input.as_bytes());
@@ -615,6 +605,39 @@ mod tests {
         });
 
         assert_eq!(actual, expected);
+    }
+
+    macro_rules! test_parse_errors {
+        ($(($name:ident, $input:expr, $kind:ident, $start:expr, $end:expr),)*) => ($(
+            #[test]
+            fn $name() {
+                let input = $input;
+                let parser = SchemaParser::new(input.as_bytes());
+                let actual = parser.parse();
+                let expected = Err(SchemaParseError {
+                    kind: SchemaParseErrorKind::$kind,
+                    location: Location($start, $end),
+                });
+
+                assert_eq!(actual, expected);
+            }
+        )*);
+    }
+
+    test_parse_errors! {
+        (parse_empty, "", UnexpectedEof, 0, 0),
+        (parse_unknown_token, "fld1:%$", UnknownToken, 5, 6),
+        (parse_unexpected_token_at_top_level, "fld1:INT8]", UnexpectedToken, 9, 10),
+        (parse_unexpected_token_as_ident_in_field_list, "[fld1:INT8]", UnexpectedToken, 0, 1),
+        (parse_unexpected_eof_as_colon_in_field_list, "fld1", UnexpectedEof, 4, 0),
+        (parse_unexpected_token_as_colon_in_field_list, "fld1,INT8", UnexpectedToken, 4, 5),
+        (parse_unexpected_token_as_comma_in_field_list, "fld1:INT8:fld2:INT8", UnexpectedToken, 9, 10),
+        (parse_unexpected_eof_as_type, "fld1:", UnexpectedEof, 5, 0),
+        (parse_unexpected_token_as_type, "fld1::INT8", UnexpectedToken, 5, 6),
+        (parse_unknown_builtin_type, "fld1:INT64", UnknownBuiltinType, 5, 10),
+        (parse_unknown_length_in_nstr, "fld1:<len>NSTR", UnexpectedToken, 6, 9),
+        (parse_unexpected_token_as_ranglebracket_in_nstr, "fld1:<5}NSTR", UnexpectedToken, 7, 8),
+        (parse_unexpected_string_as_type_in_nstr, "fld1:<5>STR", UnexpectedToken, 8, 11),
     }
 
     #[test]
