@@ -77,8 +77,10 @@ pub(crate) enum Size {
     Undefined,
 }
 
+// after running self.lexer.next(), self.pos must be updated accordingly
 struct SchemaParser<'b> {
     lexer: std::iter::Peekable<SchemaLexer<'b>>,
+    pos: usize,
     params: ParamStack,
 }
 
@@ -86,17 +88,23 @@ impl<'b> SchemaParser<'b> {
     fn new(input: &'b [u8]) -> Self {
         Self {
             lexer: SchemaLexer::new(input).peekable(),
+            pos: 0,
             params: ParamStack::new(),
         }
     }
 
     fn parse(mut self) -> Result<Schema, SchemaParseError> {
         let kind = self.parse_field_list()?;
-        if self.lexer.next().is_some() {
-            // should be Token::RBracket
-            return Err(SchemaParseError::UnknownError(
-                "reading field list finished but some tokens are unexpectedly left".to_owned(),
-            ));
+        if let Some(result) = self.lexer.next() {
+            // should be TokenKind::RBracket
+            let token = result.unwrap();
+            self.pos = token.pos;
+            return Err(SchemaParseError {
+                kind: SchemaParseErrorKind::UnknownError(
+                    "reading field list finished but some tokens are unexpectedly left".to_owned(),
+                ),
+                pos: self.pos,
+            });
         }
 
         let schema = Schema {
@@ -113,29 +121,38 @@ impl<'b> SchemaParser<'b> {
         let mut members = Vec::new();
 
         while let Some(token) = self.lexer.next() {
-            let name = if let Token::Ident(s) = token? {
+            let Token { kind, pos } = token?;
+            self.pos = pos;
+            let name = if let TokenKind::Ident(s) = kind {
                 s
             } else {
-                return Err(SchemaParseError::UnexpectedToken);
+                return Err(self.err_unexpected_token());
             };
 
-            self.consume_symbol(Token::Colon)?;
+            self.consume_symbol(TokenKind::Colon)?;
 
             let kind = self.parse_type()?;
             let member = Ast { kind, name };
             members.push(member);
 
-            if matches!(self.lexer.peek(), None | Some(Ok(Token::RBracket))) {
+            if matches!(
+                self.lexer.peek(),
+                None | Some(Ok(Token {
+                    kind: TokenKind::RBracket,
+                    ..
+                }))
+            ) {
                 break;
             }
 
-            if !matches!(self.lexer.next(), Some(Ok(Token::Comma))) {
-                return Err(SchemaParseError::UnexpectedToken);
+            // actually EOF has been captured in the previous block
+            if self.next_token()?.kind != TokenKind::Comma {
+                return Err(self.err_unexpected_token());
             }
         }
 
         if members.is_empty() {
-            return Err(SchemaParseError::UnexpectedEof);
+            return Err(self.err_unexpected_eof());
         }
 
         let kind = AstKind::Struct(members);
@@ -143,19 +160,17 @@ impl<'b> SchemaParser<'b> {
     }
 
     fn parse_type(&mut self) -> Result<AstKind, SchemaParseError> {
-        match self.next_token()? {
-            Token::Ident(s) => self.parse_builtin_type(s),
-            Token::LBracket => {
+        match self.next_token()?.kind {
+            TokenKind::Ident(s) => self.parse_builtin_type(s),
+            TokenKind::LBracket => {
                 let kind = self.parse_field_list()?;
-                // consumes next Token::RBracket or reaches EOF
-                if self.lexer.next().is_none() {
-                    return Err(SchemaParseError::UnexpectedEof);
-                }
+                // no tokens other than TokenKind::RBracket or EOF appears
+                self.consume_next_token()?;
                 Ok(kind)
             }
-            Token::LAngleBracket => self.parse_nstr_type(),
-            Token::LBrace => self.parse_array(),
-            _ => Err(SchemaParseError::UnexpectedToken),
+            TokenKind::LAngleBracket => self.parse_nstr_type(),
+            TokenKind::LBrace => self.parse_array(),
+            _ => Err(self.err_unexpected_token()),
         }
     }
 
@@ -171,9 +186,12 @@ impl<'b> SchemaParser<'b> {
             "FLOAT64" => AstKind::Float64,
             "STR" => AstKind::Str,
             _ => {
-                return Err(SchemaParseError::UnknownError(format!(
-                    "unknown builtin type {ident}"
-                )))
+                return Err(SchemaParseError {
+                    kind: SchemaParseErrorKind::UnknownError(format!(
+                        "unknown builtin type {ident}"
+                    )),
+                    pos: self.pos,
+                })
             }
         };
         Ok(kind)
@@ -182,14 +200,14 @@ impl<'b> SchemaParser<'b> {
     fn parse_nstr_type(&mut self) -> Result<AstKind, SchemaParseError> {
         // LAngleBracket has already been read
         let len = self.consume_number()?;
-        self.consume_symbol(Token::RAngleBracket)?;
+        self.consume_symbol(TokenKind::RAngleBracket)?;
 
-        if let Token::Ident(s) = self.next_token()? {
+        if let TokenKind::Ident(s) = self.next_token()?.kind {
             if s.as_str() != "NSTR" {
-                return Err(SchemaParseError::UnexpectedToken);
+                return Err(self.err_unexpected_token());
             }
         } else {
-            return Err(SchemaParseError::UnexpectedToken);
+            return Err(self.err_unexpected_token());
         }
 
         let kind = AstKind::NStr(len);
@@ -198,23 +216,20 @@ impl<'b> SchemaParser<'b> {
 
     fn parse_array(&mut self) -> Result<AstKind, SchemaParseError> {
         // LBrace has already been read
-
-        let len = match self.next_token()? {
-            Token::Number(n) => Len::Fixed(n),
-            Token::Ident(s) => {
+        let len = match self.next_token()?.kind {
+            TokenKind::Number(n) => Len::Fixed(n),
+            TokenKind::Ident(s) => {
                 self.params.add_entry(&s);
                 Len::Variable(s)
             }
-            _ => return Err(SchemaParseError::UnexpectedToken),
+            _ => return Err(self.err_unexpected_token()),
         };
 
-        self.consume_symbol(Token::RBrace)?;
-        self.consume_symbol(Token::LBracket)?;
+        self.consume_symbol(TokenKind::RBrace)?;
+        self.consume_symbol(TokenKind::LBracket)?;
         let struct_kind = self.parse_field_list()?;
-        // consumes next Token::RBracket or reaches EOF
-        if self.lexer.next().is_none() {
-            return Err(SchemaParseError::UnexpectedEof);
-        }
+        // no tokens other than TokenKind::RBracket or EOF appears
+        self.consume_next_token()?;
 
         let struct_node = Ast {
             kind: struct_kind,
@@ -224,15 +239,15 @@ impl<'b> SchemaParser<'b> {
     }
 
     fn consume_number(&mut self) -> Result<usize, SchemaParseError> {
-        match self.next_token()? {
-            Token::Number(n) => Ok(n),
-            _ => Err(SchemaParseError::UnexpectedToken),
+        match self.next_token()?.kind {
+            TokenKind::Number(n) => Ok(n),
+            _ => Err(self.err_unexpected_token()),
         }
     }
 
-    fn consume_symbol(&mut self, symbol: Token) -> Result<(), SchemaParseError> {
-        if self.next_token()? != symbol {
-            return Err(SchemaParseError::UnexpectedToken);
+    fn consume_symbol(&mut self, symbol: TokenKind) -> Result<(), SchemaParseError> {
+        if self.next_token()?.kind != symbol {
+            return Err(self.err_unexpected_token());
         }
         Ok(())
     }
@@ -241,8 +256,30 @@ impl<'b> SchemaParser<'b> {
         let token = self
             .lexer
             .next()
-            .unwrap_or(Err(SchemaParseError::UnexpectedEof))?;
+            .unwrap_or(Err(self.err_unexpected_eof()))?;
+        self.pos = token.pos;
         Ok(token)
+    }
+
+    fn consume_next_token(&mut self) -> Result<(), SchemaParseError> {
+        match self.lexer.next() {
+            Some(Ok(token)) => {
+                self.pos = token.pos;
+                Ok(())
+            }
+            None => Err(self.err_unexpected_eof()),
+            _ => unreachable!(),
+        }
+    }
+
+    #[inline]
+    fn err_unexpected_eof(&self) -> SchemaParseError {
+        SchemaParseError::unexpected_eof(self.pos)
+    }
+
+    #[inline]
+    fn err_unexpected_token(&self) -> SchemaParseError {
+        SchemaParseError::unexpected_token(self.pos)
     }
 }
 
@@ -263,8 +300,9 @@ impl<'b> SchemaLexer<'b> {
         {
             self.pos += 1;
         }
-        let token = Token::Ident(String::from_utf8_lossy(&self.input[start..self.pos]).to_string());
-        token
+        let kind =
+            TokenKind::Ident(String::from_utf8_lossy(&self.input[start..self.pos]).to_string());
+        Token::new(kind, start)
     }
 
     fn lex_number(&mut self) -> Token {
@@ -272,9 +310,10 @@ impl<'b> SchemaLexer<'b> {
         while self.pos < self.input.len() && matches!(self.input[self.pos], b'0'..=b'9') {
             self.pos += 1;
         }
-        let token =
-            Token::Number((String::from_utf8_lossy(&self.input[start..self.pos]).parse()).unwrap());
-        token
+        let kind = TokenKind::Number(
+            (String::from_utf8_lossy(&self.input[start..self.pos]).parse()).unwrap(),
+        );
+        Token::new(kind, start)
     }
 }
 
@@ -283,9 +322,10 @@ impl<'b> Iterator for SchemaLexer<'b> {
 
     fn next(&mut self) -> Option<Self::Item> {
         macro_rules! lex {
-            ($tok:expr) => {{
+            ($kind:expr) => {{
+                let pos = self.pos;
                 self.pos += 1;
-                Ok($tok)
+                Ok(Token::new($kind, pos))
             }};
         }
 
@@ -296,15 +336,18 @@ impl<'b> Iterator for SchemaLexer<'b> {
         let token = match self.input[self.pos] {
             b'A'..=b'Z' | b'a'..=b'z' => Ok(self.lex_ident()),
             b'1'..=b'9' => Ok(self.lex_number()),
-            b':' => lex!(Token::Colon),
-            b',' => lex!(Token::Comma),
-            b'[' => lex!(Token::LBracket),
-            b']' => lex!(Token::RBracket),
-            b'<' => lex!(Token::LAngleBracket),
-            b'>' => lex!(Token::RAngleBracket),
-            b'{' => lex!(Token::LBrace),
-            b'}' => lex!(Token::RBrace),
-            _ => Err(SchemaParseError::UnknownToken),
+            b':' => lex!(TokenKind::Colon),
+            b',' => lex!(TokenKind::Comma),
+            b'[' => lex!(TokenKind::LBracket),
+            b']' => lex!(TokenKind::RBracket),
+            b'<' => lex!(TokenKind::LAngleBracket),
+            b'>' => lex!(TokenKind::RAngleBracket),
+            b'{' => lex!(TokenKind::LBrace),
+            b'}' => lex!(TokenKind::RBrace),
+            _ => Err(SchemaParseError {
+                kind: SchemaParseErrorKind::UnknownToken,
+                pos: self.pos,
+            }),
         };
         Some(token)
     }
@@ -315,7 +358,19 @@ impl<'b> Iterator for SchemaLexer<'b> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-enum Token {
+struct Token {
+    kind: TokenKind,
+    pos: usize,
+}
+
+impl Token {
+    fn new(kind: TokenKind, pos: usize) -> Token {
+        Token { kind, pos }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum TokenKind {
     Ident(String),
     Number(usize),
     Colon,
@@ -329,11 +384,27 @@ enum Token {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum SchemaParseError {
-    UnexpectedEof,
-    UnexpectedToken,
-    UnknownToken,
-    UnknownError(String),
+pub struct SchemaParseError {
+    kind: SchemaParseErrorKind,
+    pos: usize,
+}
+
+impl SchemaParseError {
+    #[inline]
+    fn unexpected_eof(pos: usize) -> Self {
+        Self {
+            kind: SchemaParseErrorKind::UnexpectedEof,
+            pos,
+        }
+    }
+
+    #[inline]
+    fn unexpected_token(pos: usize) -> Self {
+        Self {
+            kind: SchemaParseErrorKind::UnexpectedToken,
+            pos,
+        }
+    }
 }
 
 impl std::fmt::Display for SchemaParseError {
@@ -344,6 +415,14 @@ impl std::fmt::Display for SchemaParseError {
 
 impl std::error::Error for SchemaParseError {}
 
+#[derive(Debug, PartialEq, Eq)]
+pub enum SchemaParseErrorKind {
+    UnexpectedEof,
+    UnexpectedToken,
+    UnknownToken,
+    UnknownError(String),
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -353,7 +432,7 @@ mod tests {
         let input = "";
         let parser = SchemaParser::new(input.as_bytes());
         let actual = parser.parse();
-        let expected = Err(SchemaParseError::UnexpectedEof);
+        let expected = Err(SchemaParseError::unexpected_eof(0));
 
         assert_eq!(actual, expected);
     }
@@ -540,38 +619,46 @@ mod tests {
         let lexer = SchemaLexer::new(input.as_bytes());
         let actual = lexer.collect::<Vec<_>>();
         let expected = vec![
-            Token::Ident("fld1".to_owned()),
-            Token::Colon,
-            Token::Ident("INT16".to_owned()),
-            Token::Comma,
-            Token::Ident("fld2".to_owned()),
-            Token::Colon,
-            Token::LBracket,
-            Token::Ident("sfld1".to_owned()),
-            Token::Colon,
-            Token::Ident("INT16".to_owned()),
-            Token::Comma,
-            Token::Ident("sfld2".to_owned()),
-            Token::Colon,
-            Token::Ident("INT8".to_owned()),
-            Token::RBracket,
-            Token::Comma,
-            Token::Ident("fld3".to_owned()),
-            Token::Colon,
-            Token::LBrace,
-            Token::Number(3),
-            Token::RBrace,
-            Token::LBracket,
-            Token::Ident("sfld1".to_owned()),
-            Token::Colon,
-            Token::Ident("INT16".to_owned()),
-            Token::Comma,
-            Token::Ident("sfld2".to_owned()),
-            Token::Colon,
-            Token::Ident("INT8".to_owned()),
-            Token::RBracket,
+            (TokenKind::Ident("fld1".to_owned()), 0),
+            (TokenKind::Colon, 4),
+            (TokenKind::Ident("INT16".to_owned()), 5),
+            (TokenKind::Comma, 10),
+            (TokenKind::Ident("fld2".to_owned()), 11),
+            (TokenKind::Colon, 15),
+            (TokenKind::LBracket, 16),
+            (TokenKind::Ident("sfld1".to_owned()), 17),
+            (TokenKind::Colon, 22),
+            (TokenKind::Ident("INT16".to_owned()), 23),
+            (TokenKind::Comma, 28),
+            (TokenKind::Ident("sfld2".to_owned()), 29),
+            (TokenKind::Colon, 34),
+            (TokenKind::Ident("INT8".to_owned()), 35),
+            (TokenKind::RBracket, 39),
+            (TokenKind::Comma, 40),
+            (TokenKind::Ident("fld3".to_owned()), 41),
+            (TokenKind::Colon, 45),
+            (TokenKind::LBrace, 46),
+            (TokenKind::Number(3), 47),
+            (TokenKind::RBrace, 48),
+            (TokenKind::LBracket, 49),
+            (TokenKind::Ident("sfld1".to_owned()), 50),
+            (TokenKind::Colon, 55),
+            (TokenKind::Ident("INT16".to_owned()), 56),
+            (TokenKind::Comma, 61),
+            (TokenKind::Ident("sfld2".to_owned()), 62),
+            (TokenKind::Colon, 67),
+            (TokenKind::Ident("INT8".to_owned()), 68),
+            (TokenKind::RBracket, 72),
         ];
-        let expected = expected.iter().map(|t| Ok(t.clone())).collect::<Vec<_>>();
+        let expected = expected
+            .iter()
+            .map(|(kind, pos)| {
+                Ok(Token {
+                    kind: kind.clone(),
+                    pos: *pos,
+                })
+            })
+            .collect::<Vec<_>>();
         assert_eq!(actual, expected);
     }
 
