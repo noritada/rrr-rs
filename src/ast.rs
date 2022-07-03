@@ -99,12 +99,7 @@ impl<'b> SchemaParser<'b> {
             // should be TokenKind::RBracket
             let token = result.unwrap();
             self.update_location(&token);
-            return Err(SchemaParseError {
-                kind: SchemaParseErrorKind::UnknownError(
-                    "reading field list finished but some tokens are unexpectedly left".to_owned(),
-                ),
-                location: self.location,
-            });
+            return Err(self.err_unexpected_token());
         }
 
         let schema = Schema {
@@ -187,9 +182,7 @@ impl<'b> SchemaParser<'b> {
             "STR" => AstKind::Str,
             _ => {
                 return Err(SchemaParseError {
-                    kind: SchemaParseErrorKind::UnknownError(format!(
-                        "unknown builtin type {ident}"
-                    )),
+                    kind: SchemaParseErrorKind::UnknownBuiltinType,
                     location: self.location.clone(),
                 })
             }
@@ -427,8 +420,8 @@ impl std::error::Error for SchemaParseError {}
 pub enum SchemaParseErrorKind {
     UnexpectedEof,
     UnexpectedToken,
+    UnknownBuiltinType,
     UnknownToken,
-    UnknownError(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
