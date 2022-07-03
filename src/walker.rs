@@ -48,7 +48,7 @@ impl<'w> BufWalker<'w> {
         let start = self.pos;
         self.pos += std::mem::size_of::<N>();
         if self.pos > (self.buf).len() {
-            return Err(Error);
+            return Err(Error::General);
         }
         let val = FromBytes::from_be_bytes(&self.buf[start..self.pos]);
         Ok(val)
@@ -86,7 +86,7 @@ impl<'w> BufWalker<'w> {
                 return Ok(());
             }
         }
-        Err(Error)
+        Err(Error::General)
     }
 }
 

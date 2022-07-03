@@ -32,8 +32,8 @@ where
         self.find_magic()?;
         let map = self.read_header_fields()?;
 
-        let schema = map.get("format".as_bytes()).ok_or(Error)?;
-        let schema: Schema = schema.as_slice().try_into().map_err(|_| Error)?;
+        let schema = map.get("format".as_bytes()).ok_or(Error::General)?;
+        let schema: Schema = schema.as_slice().try_into()?;
 
         let body = if with_body {
             let compress_type = map.get("compress_type".as_bytes());
@@ -50,7 +50,7 @@ where
         loop {
             let len = self.inner.read_until(b'\n', &mut buf)?;
             if len == 0 {
-                return Err(Error); // magic not found
+                return Err(Error::General); // magic not found
             }
             let buf_len = buf.len();
             if buf_len >= Self::START_MAGIC_LEN
@@ -77,7 +77,7 @@ where
             loop {
                 let len = self.inner.read_until(b'\n', &mut buf)?;
                 if len == 0 {
-                    return Err(Error); // EOF in reading the header
+                    return Err(Error::General); // EOF in reading the header
                 }
                 let buf_len = buf.len();
                 if buf_len < 2 || buf[buf_len - 2] != b'\\' {
@@ -93,7 +93,7 @@ where
                 buf.pop(); // remove b'='
                 map.insert(buf, val);
             } else {
-                return Err(Error);
+                return Err(Error::General);
             }
         }
 
@@ -117,7 +117,7 @@ where
                 reader.read_to_end(&mut buf)?;
                 buf
             }
-            _ => return Err(Error),
+            _ => return Err(Error::General),
         };
         Ok(buf)
     }

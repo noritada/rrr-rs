@@ -37,14 +37,14 @@ impl TryInto<usize> for Number {
 
     fn try_into(self) -> Result<usize, Self::Error> {
         match self {
-            Number::Int8(n) => n.try_into().map_err(|_| Error),
-            Number::Int16(n) => n.try_into().map_err(|_| Error),
-            Number::Int32(n) => n.try_into().map_err(|_| Error),
-            Number::UInt8(n) => n.try_into().map_err(|_| Error),
-            Number::UInt16(n) => n.try_into().map_err(|_| Error),
-            Number::UInt32(n) => n.try_into().map_err(|_| Error),
-            Number::Float32(_) => Err(Error),
-            Number::Float64(_) => Err(Error),
+            Number::Int8(n) => n.try_into().map_err(|_| Error::General),
+            Number::Int16(n) => n.try_into().map_err(|_| Error::General),
+            Number::Int32(n) => n.try_into().map_err(|_| Error::General),
+            Number::UInt8(n) => n.try_into().map_err(|_| Error::General),
+            Number::UInt16(n) => n.try_into().map_err(|_| Error::General),
+            Number::UInt32(n) => n.try_into().map_err(|_| Error::General),
+            Number::Float32(_) => Err(Error::General),
+            Number::Float64(_) => Err(Error::General),
         }
     }
 }
@@ -86,7 +86,7 @@ impl ValueTree {
 
     pub(crate) fn add_value(&mut self, value: Value) -> Result<(), Error> {
         if self.completed {
-            return Err(Error); // TODO: make more descriptive
+            return Err(Error::General); // TODO: make more descriptive
         }
 
         let new_layer_created = matches!(value, Value::Struct { .. } | Value::Array { .. });
@@ -96,7 +96,7 @@ impl ValueTree {
             let vec = match head_value.as_ref() {
                 Value::Struct(v) => Ok(v),
                 Value::Array(v) => Ok(v),
-                _ => Err(Error), // TODO: make more descriptive
+                _ => Err(Error::General), // TODO: make more descriptive
             }?;
             vec.borrow_mut().push(Rc::clone(&value_rc));
             if new_layer_created {
@@ -111,7 +111,7 @@ impl ValueTree {
 
     pub(crate) fn close_value(&mut self) -> Result<(), Error> {
         if self.completed {
-            return Err(Error); // TODO: make more descriptive
+            return Err(Error::General); // TODO: make more descriptive
         }
 
         if self.heads.len() == 1 {
@@ -124,10 +124,10 @@ impl ValueTree {
 
     pub(crate) fn get<'s>(&'s mut self) -> Result<&'s Value, Error> {
         if !self.completed {
-            return Err(Error); // TODO: make more descriptive
+            return Err(Error::General); // TODO: make more descriptive
         }
 
-        let value_rc = self.heads.first().ok_or(Error)?; // TODO: make more descriptive
+        let value_rc = self.heads.first().ok_or(Error::General)?; // TODO: make more descriptive
         let value = value_rc.as_ref();
         Ok(value)
     }
@@ -238,7 +238,7 @@ mod tests {
         tree.close_value()?;
 
         let result = tree.get();
-        assert_eq!(result, Err(Error));
+        assert_eq!(result, Err(Error::General));
         Ok(())
     }
 

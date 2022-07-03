@@ -7,7 +7,7 @@ mod visitor;
 mod walker;
 
 pub use crate::{
-    ast::{Ast, AstKind, Len, Schema},
+    ast::{Ast, AstKind, Len, Schema, SchemaParseError},
     reader::DataReader,
     utils::json_escape_str,
     visitor::{AstVisitor, JsonDisplay, SchemaOnelineDisplay},
@@ -47,11 +47,17 @@ where
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Error;
+pub enum Error {
+    General,
+    Schema(SchemaParseError),
+}
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "error in processing data")
+        match self {
+            Self::General => write!(f, "error in processing data"),
+            Self::Schema(e) => e.fmt(f),
+        }
     }
 }
 
@@ -63,13 +69,19 @@ impl std::error::Error for Error {
 
 impl From<std::fmt::Error> for Error {
     fn from(_: std::fmt::Error) -> Self {
-        Self
+        Self::General
     }
 }
 
 impl From<std::io::Error> for Error {
     fn from(_: std::io::Error) -> Self {
-        Self
+        Self::General
+    }
+}
+
+impl From<SchemaParseError> for Error {
+    fn from(e: SchemaParseError) -> Self {
+        Self::Schema(e)
     }
 }
 

@@ -383,7 +383,7 @@ enum TokenKind {
     RBrace,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SchemaParseError {
     kind: SchemaParseErrorKind,
     pos: usize,
@@ -409,13 +409,13 @@ impl SchemaParseError {
 
 impl std::fmt::Display for SchemaParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "error in parsing schema")
+        write!(f, "{:?} in parsing schema at {}", self.kind, self.pos)
     }
 }
 
 impl std::error::Error for SchemaParseError {}
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SchemaParseErrorKind {
     UnexpectedEof,
     UnexpectedToken,
