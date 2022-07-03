@@ -143,9 +143,7 @@ impl<'b> SchemaParser<'b> {
     }
 
     fn parse_type(&mut self) -> Result<AstKind, SchemaParseError> {
-        let token = self.lexer.next();
-
-        match token.unwrap_or(Err(SchemaParseError::UnexpectedEof))? {
+        match self.next_token()? {
             Token::Ident(s) => self.parse_builtin_type(s),
             Token::LBracket => {
                 let kind = self.parse_field_list()?;
@@ -186,11 +184,7 @@ impl<'b> SchemaParser<'b> {
         let len = self.consume_number()?;
         self.consume_symbol(Token::RAngleBracket)?;
 
-        let nstr_ident = self
-            .lexer
-            .next()
-            .unwrap_or(Err(SchemaParseError::UnexpectedEof))?;
-        if let Token::Ident(s) = nstr_ident {
+        if let Token::Ident(s) = self.next_token()? {
             if s.as_str() != "NSTR" {
                 return Err(SchemaParseError::UnexpectedToken);
             }
@@ -205,11 +199,7 @@ impl<'b> SchemaParser<'b> {
     fn parse_array(&mut self) -> Result<AstKind, SchemaParseError> {
         // LBrace has already been read
 
-        let len = match self
-            .lexer
-            .next()
-            .unwrap_or(Err(SchemaParseError::UnexpectedEof))?
-        {
+        let len = match self.next_token()? {
             Token::Number(n) => Len::Fixed(n),
             Token::Ident(s) => {
                 self.params.add_entry(&s);
@@ -234,24 +224,25 @@ impl<'b> SchemaParser<'b> {
     }
 
     fn consume_number(&mut self) -> Result<usize, SchemaParseError> {
-        match self
-            .lexer
-            .next()
-            .unwrap_or(Err(SchemaParseError::UnexpectedEof))?
-        {
+        match self.next_token()? {
             Token::Number(n) => Ok(n),
             _ => Err(SchemaParseError::UnexpectedToken),
         }
     }
 
     fn consume_symbol(&mut self, symbol: Token) -> Result<(), SchemaParseError> {
-        let token = self.lexer.next();
-        if token.is_none() {
-            return Err(SchemaParseError::UnexpectedEof);
-        } else if token != Some(Ok(symbol)) {
+        if self.next_token()? != symbol {
             return Err(SchemaParseError::UnexpectedToken);
         }
         Ok(())
+    }
+
+    fn next_token(&mut self) -> Result<Token, SchemaParseError> {
+        let token = self
+            .lexer
+            .next()
+            .unwrap_or(Err(SchemaParseError::UnexpectedEof))?;
+        Ok(token)
     }
 }
 
