@@ -382,8 +382,8 @@ enum TokenKind {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SchemaParseError {
-    kind: SchemaParseErrorKind,
-    location: Location,
+    pub kind: SchemaParseErrorKind,
+    pub location: Location,
 }
 
 impl SchemaParseError {
@@ -425,7 +425,7 @@ pub enum SchemaParseErrorKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Location(usize, usize);
+pub struct Location(pub usize, pub usize);
 
 #[cfg(test)]
 mod tests {

@@ -7,7 +7,7 @@ mod visitor;
 mod walker;
 
 pub use crate::{
-    ast::{Ast, AstKind, Len, Schema, SchemaParseError},
+    ast::{Ast, AstKind, Len, Location, Schema, SchemaParseError, SchemaParseErrorKind},
     reader::DataReader,
     utils::json_escape_str,
     visitor::{AstVisitor, JsonDisplay, SchemaOnelineDisplay},
