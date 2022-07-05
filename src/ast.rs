@@ -8,16 +8,18 @@ pub struct Schema {
 }
 
 impl TryFrom<&[u8]> for Schema {
-    type Error = SchemaParseError;
+    type Error = crate::Error;
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         let parser = SchemaParser::new(bytes);
-        parser.parse()
+        parser
+            .parse()
+            .map_err(|e| crate::Error::Schema(e, bytes.to_vec()))
     }
 }
 
 impl FromStr for Schema {
-    type Err = SchemaParseError;
+    type Err = crate::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         <Self>::try_from(s.as_bytes())

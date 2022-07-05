@@ -49,14 +49,14 @@ where
 #[derive(Debug, Clone, PartialEq)]
 pub enum Error {
     General,
-    Schema(SchemaParseError),
+    Schema(SchemaParseError, Vec<u8>),
 }
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Self::General => write!(f, "error in processing data"),
-            Self::Schema(e) => e.fmt(f),
+            Self::Schema(e, b) => e.fmt(f),
         }
     }
 }
@@ -79,28 +79,22 @@ impl From<std::io::Error> for Error {
     }
 }
 
-impl From<SchemaParseError> for Error {
-    fn from(e: SchemaParseError) -> Self {
-        Self::Schema(e)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::{Schema, SchemaParseError, Size};
+    use crate::ast::{Schema, Size};
     use crate::value::{Number, Value, ValueTree};
     use crate::walker::BufWalker;
     use std::cell::RefCell;
     use std::rc::Rc;
 
-    fn schema_without_str() -> Result<Schema, SchemaParseError> {
+    fn schema_without_str() -> Result<Schema, Error> {
         let ast = "date:[year:UINT16,month:UINT8,day:UINT8],\
             data:{4}[loc:<4>NSTR,temp:INT16,rhum:UINT16],comment:<16>NSTR";
         ast.parse()
     }
 
-    fn schema_with_str() -> Result<Schema, SchemaParseError> {
+    fn schema_with_str() -> Result<Schema, Error> {
         let ast = "date:[year:UINT16,month:UINT8,day:UINT8],\
             data:{4}[loc:STR,temp:INT16,rhum:UINT16],comment:<16>NSTR";
         ast.parse()
