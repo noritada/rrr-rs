@@ -36,11 +36,19 @@ impl<'e, 'i> std::fmt::Display for SchemaParseErrorReport<'e, 'i> {
             SchemaParseErrorKind::UnexpectedEof => (inner.location.0, inner.location.0 + 1),
             _ => (inner.location.0, inner.location.1),
         };
-        const MARGIN: usize = 16;
+        const MARGIN: usize = 32;
+        const NUM_DOTS: usize = 3;
         let sstart = std::cmp::max(lstart, MARGIN) - MARGIN;
         let send = std::cmp::min(lend + MARGIN, schema.len());
 
-        let partial_schema: String = schema[sstart..send].iter().map(|b| *b as char).collect();
+        let partial_schema: String = if sstart == 0 {
+            schema[sstart..send].iter().map(|b| *b as char).collect()
+        } else {
+            std::iter::repeat('.')
+                .take(NUM_DOTS)
+                .chain(schema[(sstart + NUM_DOTS)..send].iter().map(|b| *b as char))
+                .collect()
+        };
         let indicator_padding = " ".repeat(lstart - sstart);
         let indicator = "^".repeat(lend - lstart);
         let yellow_bold = Style::new().yellow().bold();
@@ -111,6 +119,30 @@ mod tests {
          "reason: unknown built type found
 
     fld1:INT64
+         ^^^^^
+"),
+    }
+
+    test_error_report! {
+        (report_error_starting_from_location_32, "fld1:INT8,fld2:INT8,fld3:INT8,f:",
+         UnexpectedEof, 32, 0,
+         "reason: unexpected end of the schema statement reached
+
+    fld1:INT8,fld2:INT8,fld3:INT8,f:
+                                    ^
+"),
+        (report_error_starting_from_location_33, "fld1:INT8,fld2:INT8,fld3:INT8,ff:",
+         UnexpectedEof, 33, 0,
+         "reason: unexpected end of the schema statement reached
+
+    ...:INT8,fld2:INT8,fld3:INT8,ff:
+                                    ^
+"),
+        (report_error_at_32_characters_from_end, "fld1:INT64,fld2:INT8,fld3:INT8,ffffff:INT8",
+         UnknownBuiltinType, 5, 10,
+         "reason: unknown built type found
+
+    fld1:INT64,fld2:INT8,fld3:INT8,ffffff:INT8
          ^^^^^
 "),
     }
