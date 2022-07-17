@@ -1,4 +1,17 @@
+use anyhow::anyhow;
 use rrr::{SchemaParseError, SchemaParseErrorKind};
+
+pub(crate) fn create_error_report(err: rrr::Error) -> anyhow::Error {
+    match err {
+        rrr::Error::Schema(e, bytes) => {
+            anyhow!(
+                "failed to parse the schema\n\n{}",
+                SchemaParseErrorReport(&e, &bytes)
+            )
+        }
+        e => anyhow!("{}", e),
+    }
+}
 
 pub(crate) struct SchemaParseErrorReport<'e, 'i>(&'e SchemaParseError, &'i [u8]);
 

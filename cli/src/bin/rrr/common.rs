@@ -74,7 +74,7 @@ where
     R: BufRead + Seek,
 {
     let mut f = DataReader::new(reader);
-    f.read(with_body).map_err(|e| anyhow!(e))
+    f.read(with_body).map_err(crate::error::create_error_report)
 }
 
 #[cfg(unix)]
