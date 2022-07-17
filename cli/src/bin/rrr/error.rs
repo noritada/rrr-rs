@@ -17,14 +17,9 @@ pub(crate) fn create_error_report(err: rrr::Error) -> anyhow::Error {
 pub(crate) struct SchemaParseErrorReport<'e, 'i>(&'e SchemaParseError, &'i [u8]);
 
 impl<'e, 'i> SchemaParseErrorReport<'e, 'i> {
-    fn short_reason(&self) -> &'static str {
+    fn short_reason(&self) -> String {
         let Self(SchemaParseError { kind, .. }, _) = self;
-        match kind {
-            SchemaParseErrorKind::UnexpectedEof => "unexpected end of the schema statement reached",
-            SchemaParseErrorKind::UnexpectedToken => "unexpected token found",
-            SchemaParseErrorKind::UnknownBuiltinType => "unknown built type found",
-            SchemaParseErrorKind::UnknownToken => "unknown token found",
-        }
+        format!("{}", kind)
     }
 }
 

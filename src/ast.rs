@@ -410,8 +410,8 @@ impl std::fmt::Display for SchemaParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
             f,
-            "{:?} in parsing schema at ({}, {})",
-            self.kind, self.location.0, self.location.1
+            "schema parse error at ({}, {}): {}",
+            self.location.0, self.location.1, self.kind
         )
     }
 }
@@ -424,6 +424,18 @@ pub enum SchemaParseErrorKind {
     UnexpectedToken,
     UnknownBuiltinType,
     UnknownToken,
+}
+
+impl std::fmt::Display for SchemaParseErrorKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let description = match self {
+            Self::UnexpectedEof => "unexpected end of the schema statement reached",
+            Self::UnexpectedToken => "unexpected token found",
+            Self::UnknownBuiltinType => "unknown built type found",
+            Self::UnknownToken => "unknown token found",
+        };
+        write!(f, "{}", description)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
