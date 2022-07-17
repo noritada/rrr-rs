@@ -16,6 +16,18 @@ pub(crate) fn create_error_report(err: rrr::Error) -> anyhow::Error {
 
 pub(crate) struct SchemaParseErrorReport<'e, 'i>(&'e SchemaParseError, &'i [u8]);
 
+impl<'e, 'i> SchemaParseErrorReport<'e, 'i> {
+    fn short_reason(&self) -> &'static str {
+        let Self(SchemaParseError { kind, .. }, _) = self;
+        match kind {
+            SchemaParseErrorKind::UnexpectedEof => "unexpected end of the schema statement reached",
+            SchemaParseErrorKind::UnexpectedToken => "unexpected token found",
+            SchemaParseErrorKind::UnknownBuiltinType => "unknown built type found",
+            SchemaParseErrorKind::UnknownToken => "unknown token found",
+        }
+    }
+}
+
 impl<'e, 'i> std::fmt::Display for SchemaParseErrorReport<'e, 'i> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let Self(inner, schema) = self;
@@ -31,16 +43,22 @@ impl<'e, 'i> std::fmt::Display for SchemaParseErrorReport<'e, 'i> {
         let partial_schema: String = schema[sstart..send].iter().map(|b| *b as char).collect();
         let indicator_padding = " ".repeat(lstart - sstart);
         let indicator = "^".repeat(lend - lstart);
-        let yellow = Style::new().yellow();
+        let yellow_bold = Style::new().yellow().bold();
+        let bold = Style::new().bold();
+
         write!(
             f,
-            "    {}
-    {}{} {:?}
+            "{}{} {}
+
+    {}
+    {}{}
 ",
+            yellow_bold.apply_to("reason"),
+            bold.apply_to(":"),
+            bold.apply_to(self.short_reason()),
             partial_schema,
             indicator_padding,
-            yellow.apply_to(indicator),
-            inner.kind
+            yellow_bold.apply_to(indicator),
         )
     }
 }
@@ -71,17 +89,29 @@ mod tests {
     }
 
     test_error_report! {
-        (report_empty, "", UnexpectedEof, 0, 0, "    
-    ^ UnexpectedEof
+        (report_empty, "", UnexpectedEof, 0, 0,
+         "reason: unexpected end of the schema statement reached
+
+    
+    ^
 "),
-        (report_unknown_token, "fld1:%$", UnknownToken, 5, 6, "    fld1:%$
-         ^ UnknownToken
+        (report_unknown_token, "fld1:%$", UnknownToken, 5, 6,
+         "reason: unknown token found
+
+    fld1:%$
+         ^
 "),
-        (report_unexpected_token_at_top_level, "fld1:INT8]", UnexpectedToken, 9, 10, "    fld1:INT8]
-             ^ UnexpectedToken
+        (report_unexpected_token_at_top_level, "fld1:INT8]", UnexpectedToken, 9, 10,
+         "reason: unexpected token found
+
+    fld1:INT8]
+             ^
 "),
-        (report_unknown_builtin_type, "fld1:INT64", UnknownBuiltinType, 5, 10, "    fld1:INT64
-         ^^^^^ UnknownBuiltinType
+        (report_unknown_builtin_type, "fld1:INT64", UnknownBuiltinType, 5, 10,
+         "reason: unknown built type found
+
+    fld1:INT64
+         ^^^^^
 "),
     }
 }
