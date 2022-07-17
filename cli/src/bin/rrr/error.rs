@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use console::Style;
 use rrr::{SchemaParseError, SchemaParseErrorKind};
 
 pub(crate) fn create_error_report(err: rrr::Error) -> anyhow::Error {
@@ -30,12 +31,16 @@ impl<'e, 'i> std::fmt::Display for SchemaParseErrorReport<'e, 'i> {
         let partial_schema: String = schema[sstart..send].iter().map(|b| *b as char).collect();
         let indicator_padding = " ".repeat(lstart - sstart);
         let indicator = "^".repeat(lend - lstart);
+        let yellow = Style::new().yellow();
         write!(
             f,
             "    {}
     {}{} {:?}
 ",
-            partial_schema, indicator_padding, indicator, inner.kind
+            partial_schema,
+            indicator_padding,
+            yellow.apply_to(indicator),
+            inner.kind
         )
     }
 }
@@ -57,6 +62,7 @@ mod tests {
                 };
                 let report = SchemaParseErrorReport(&error, &schema_line);
                 let actual= report.to_string();
+                let actual = console::strip_ansi_codes(&actual);
                 let expected= $expected;
 
                 assert_eq!(actual, expected);
