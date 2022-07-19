@@ -1,6 +1,6 @@
 mod command;
 mod common;
-mod error;
+mod diagnostics;
 mod visitor;
 
 use anyhow::Result;
