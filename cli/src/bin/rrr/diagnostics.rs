@@ -66,6 +66,22 @@ impl<'e, 'i> std::fmt::Display for SchemaParseErrorReport<'e, 'i> {
     }
 }
 
+pub(crate) fn create_s3_download_error_report(
+    err: aws_sdk_s3::types::SdkError<aws_sdk_s3::error::GetObjectError>,
+) -> anyhow::Error {
+    let yellow_bold = Style::new().yellow().bold();
+    let bold = Style::new().bold();
+
+    let message = format!(
+        "{}{} {}
+",
+        yellow_bold.apply_to("reason"),
+        bold.apply_to(":"),
+        bold.apply_to(err),
+    );
+    anyhow!("failed to download an S3 object:\n\n{}", message)
+}
+
 #[cfg(test)]
 mod tests {
     use rrr::Location;
