@@ -7,7 +7,7 @@ mod visitor;
 mod walker;
 
 pub use crate::{
-    ast::{Ast, AstKind, Len, Schema},
+    ast::{Ast, AstKind, Len, Location, Schema, SchemaParseError, SchemaParseErrorKind},
     reader::DataReader,
     utils::json_escape_str,
     visitor::{AstVisitor, JsonDisplay, SchemaOnelineDisplay},
@@ -47,11 +47,17 @@ where
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Error;
+pub enum Error {
+    General,
+    Schema(SchemaParseError, Vec<u8>),
+}
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "error in processing data")
+        match self {
+            Self::General => write!(f, "error in processing data"),
+            Self::Schema(e, b) => e.fmt(f),
+        }
     }
 }
 
@@ -63,32 +69,32 @@ impl std::error::Error for Error {
 
 impl From<std::fmt::Error> for Error {
     fn from(_: std::fmt::Error) -> Self {
-        Self
+        Self::General
     }
 }
 
 impl From<std::io::Error> for Error {
     fn from(_: std::io::Error) -> Self {
-        Self
+        Self::General
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::{Schema, SchemaParseError, Size};
+    use crate::ast::{Schema, Size};
     use crate::value::{Number, Value, ValueTree};
     use crate::walker::BufWalker;
     use std::cell::RefCell;
     use std::rc::Rc;
 
-    fn schema_without_str() -> Result<Schema, SchemaParseError> {
+    fn schema_without_str() -> Result<Schema, Error> {
         let ast = "date:[year:UINT16,month:UINT8,day:UINT8],\
             data:{4}[loc:<4>NSTR,temp:INT16,rhum:UINT16],comment:<16>NSTR";
         ast.parse()
     }
 
-    fn schema_with_str() -> Result<Schema, SchemaParseError> {
+    fn schema_with_str() -> Result<Schema, Error> {
         let ast = "date:[year:UINT16,month:UINT8,day:UINT8],\
             data:{4}[loc:STR,temp:INT16,rhum:UINT16],comment:<16>NSTR";
         ast.parse()

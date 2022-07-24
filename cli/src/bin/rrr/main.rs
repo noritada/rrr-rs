@@ -1,5 +1,6 @@
 mod command;
 mod common;
+mod diagnostics;
 mod visitor;
 
 use anyhow::Result;
@@ -13,7 +14,15 @@ fn app() -> Command<'static> {
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() {
+    if let Err(err) = try_main().await {
+        let red = console::Style::new().red();
+        eprintln!("{}: {}", red.apply_to("error"), err);
+        std::process::exit(1);
+    }
+}
+
+async fn try_main() -> Result<()> {
     let matches = app().get_matches();
     command::dispatch(matches).await
 }

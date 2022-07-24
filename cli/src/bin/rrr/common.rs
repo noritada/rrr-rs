@@ -53,7 +53,10 @@ async fn download_s3_object(
     } else {
         req
     };
-    let resp = req.send().await?;
+    let resp = req
+        .send()
+        .await
+        .map_err(crate::diagnostics::create_s3_download_error_report)?;
 
     let data = resp.body.collect().await?;
     Ok(data.into_bytes())
@@ -74,7 +77,8 @@ where
     R: BufRead + Seek,
 {
     let mut f = DataReader::new(reader);
-    f.read(with_body).map_err(|e| anyhow!(e))
+    f.read(with_body)
+        .map_err(crate::diagnostics::create_error_report)
 }
 
 #[cfg(unix)]

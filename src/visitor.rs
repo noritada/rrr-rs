@@ -206,7 +206,7 @@ impl<'a, 'f, 'b> AstVisitor for JsonSerializer<'a, 'f, 'b> {
 
             let len = match *len {
                 Len::Fixed(ref n) => n,
-                Len::Variable(ref s) => self.params.get_value(s).ok_or(Error)?,
+                Len::Variable(ref s) => self.params.get_value(s).ok_or(Error::General)?,
             };
             let mut iter = (0..*len).peekable();
             while let Some(_) = iter.next() {
@@ -236,7 +236,7 @@ impl<'a, 'f, 'b> AstVisitor for JsonSerializer<'a, 'f, 'b> {
             if let Value::Number(ref n) = value {
                 self.params.push_value(name, (*n).clone().try_into()?);
             } else {
-                return Err(Error); // parameters should be positive numbers
+                return Err(Error::General); // parameters should be positive numbers
             }
         }
         Ok(())
