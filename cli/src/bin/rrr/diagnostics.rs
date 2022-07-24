@@ -32,34 +32,35 @@ impl<'e, 'i> std::fmt::Display for SchemaParseErrorReport<'e, 'i> {
             _ => (inner.location.0, inner.location.1),
         };
         const MARGIN: usize = 32;
-        const NUM_DOTS: usize = 3;
         let sstart = std::cmp::max(lstart, MARGIN) - MARGIN;
         let send = std::cmp::min(lend + MARGIN, schema.len());
 
-        let partial_schema: String = if sstart == 0 {
-            schema[sstart..send].iter().map(|b| *b as char).collect()
-        } else {
-            std::iter::repeat('.')
-                .take(NUM_DOTS)
-                .chain(schema[(sstart + NUM_DOTS)..send].iter().map(|b| *b as char))
-                .collect()
-        };
-        let indicator_padding = " ".repeat(lstart - sstart);
+        let partial_schema_field_indicator = "format =";
+        let partial_schema_prefix = if sstart == 0 { "    " } else { " .. " };
+        let partial_schema: String = schema[sstart..send].iter().map(|b| *b as char).collect();
+        let partial_schema_suffix = if send == schema.len() { "" } else { " .." };
+        let indicator_padding = " ".repeat(
+            partial_schema_field_indicator.len() + partial_schema_prefix.len() + lstart - sstart,
+        );
         let indicator = "^".repeat(lend - lstart);
         let yellow_bold = Style::new().yellow().bold();
         let bold = Style::new().bold();
+        let magenta = Style::new().magenta();
 
         write!(
             f,
             "{}{} {}
 
-    {}
+    {}{}{}{}
     {}{}
 ",
             yellow_bold.apply_to("reason"),
             bold.apply_to(":"),
             bold.apply_to(self.short_reason()),
+            magenta.apply_to(partial_schema_field_indicator),
+            partial_schema_prefix,
             partial_schema,
+            partial_schema_suffix,
             indicator_padding,
             yellow_bold.apply_to(indicator),
         )
@@ -111,26 +112,26 @@ mod tests {
         (report_empty, "", UnexpectedEof, 0, 0,
          "reason: unexpected end of the schema statement reached
 
-    
-    ^
+    format =    
+                ^
 "),
         (report_unknown_token, "fld1:%$", UnknownToken, 5, 6,
          "reason: unknown token found
 
-    fld1:%$
-         ^
+    format =    fld1:%$
+                     ^
 "),
         (report_unexpected_token_at_top_level, "fld1:INT8]", UnexpectedToken, 9, 10,
          "reason: unexpected token found
 
-    fld1:INT8]
-             ^
+    format =    fld1:INT8]
+                         ^
 "),
         (report_unknown_builtin_type, "fld1:INT64", UnknownBuiltinType, 5, 10,
          "reason: unknown built type found
 
-    fld1:INT64
-         ^^^^^
+    format =    fld1:INT64
+                     ^^^^^
 "),
     }
 
@@ -139,22 +140,37 @@ mod tests {
          UnexpectedEof, 32, 0,
          "reason: unexpected end of the schema statement reached
 
-    fld1:INT8,fld2:INT8,fld3:INT8,f:
-                                    ^
+    format =    fld1:INT8,fld2:INT8,fld3:INT8,f:
+                                                ^
 "),
         (report_error_starting_from_location_33, "fld1:INT8,fld2:INT8,fld3:INT8,ff:",
          UnexpectedEof, 33, 0,
          "reason: unexpected end of the schema statement reached
 
-    ...:INT8,fld2:INT8,fld3:INT8,ff:
-                                    ^
+    format = .. ld1:INT8,fld2:INT8,fld3:INT8,ff:
+                                                ^
 "),
         (report_error_at_32_characters_from_end, "fld1:INT64,fld2:INT8,fld3:INT8,ffffff:INT8",
          UnknownBuiltinType, 5, 10,
          "reason: unknown built type found
 
-    fld1:INT64,fld2:INT8,fld3:INT8,ffffff:INT8
-         ^^^^^
+    format =    fld1:INT64,fld2:INT8,fld3:INT8,ffffff:INT8
+                     ^^^^^
+"),
+        (report_error_at_33_characters_from_end, "fld1:INT64,fld2:INT8,fld3:INT8,fffffff:INT8",
+         UnknownBuiltinType, 5, 10,
+         "reason: unknown built type found
+
+    format =    fld1:INT64,fld2:INT8,fld3:INT8,fffffff:INT ..
+                     ^^^^^
+"),
+        (report_error_starting_from_location_33_and_at_33_characters_from_end,
+         "fld1:INT8,fld2:INT8,fld3:INT8,ff:INT64,fld2:INT8,fld3:INT8,fffffff:INT8",
+         UnknownBuiltinType, 33, 38,
+         "reason: unknown built type found
+
+    format = .. ld1:INT8,fld2:INT8,fld3:INT8,ff:INT64,fld2:INT8,fld3:INT8,fffffff:INT ..
+                                                ^^^^^
 "),
     }
 }
