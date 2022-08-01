@@ -29,7 +29,7 @@ pub fn json_escape_str(input: &str) -> Cow<str> {
             // assuming that 1 byte would be converted to 2 bytes
             let mut escaped_string = String::with_capacity(input.len() * 2);
             escaped_string.push_str(&input[..i]);
-            for byte in input.as_bytes().iter() {
+            for byte in input[i..].as_bytes().iter() {
                 match json_escape_byte(byte) {
                     Some(b'u') => escaped_string.push_str(&format!("\\u{:04X}", byte)),
                     Some(b) => {
@@ -93,6 +93,18 @@ mod tests {
                 r##"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"##,
                 r##"`abcdefghijklmnopqrstuvwxyz{|}~\u007F"##,
             ]
+        ),
+        (
+            json_escape_with_no_escapes,
+            0x61u8,
+            0x7bu8,
+            vec![r##"abcdefghijklmnopqrstuvwxyz"##,]
+        ),
+        (
+            json_escape_for_string_to_be_escaped_from_the_middle,
+            0x41u8,
+            0x5eu8,
+            vec![r##"ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]"##,]
         ),
     }
 }
