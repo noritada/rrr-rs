@@ -65,22 +65,34 @@ fn json_escape_byte(input: &u8) -> Option<u8> {
 mod tests {
     use super::*;
 
-    #[test]
-    fn json_escape() {
-        let input: String = (0x00u8..0x80u8).map(|b| b as char).collect();
-        let actual = json_escape_str(input.as_str());
-        let expected = vec![
-            r##"\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\u000B\f\r\u000E\u000F"##,
-            r##"\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\u001B\u001C\u001D\u001E\u001F"##,
-            r##" !\"#$%&'()*+,-./0123456789:;<=>?"##,
-            r##"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"##,
-            r##"`abcdefghijklmnopqrstuvwxyz{|}~\u007F"##,
-        ];
-        let expected = expected
-            .iter()
-            .map(|s| s.to_owned())
-            .collect::<Vec<_>>()
-            .join("");
-        assert_eq!(actual, expected);
+    macro_rules! test_json_escape {
+        ($(($name:ident, $input_start:expr, $input_end:expr, $expected:expr),)*) => ($(
+            #[test]
+            fn $name() {
+                let input: String = ($input_start..$input_end).map(|b| b as char).collect();
+                let actual = json_escape_str(input.as_str());
+                let expected = $expected
+                    .iter()
+                    .map(|s| s.to_owned())
+                    .collect::<Vec<_>>()
+                    .join("");
+                assert_eq!(actual, expected);
+            }
+        )*);
+    }
+
+    test_json_escape! {
+        (
+            json_escape_for_all_ascii_characters,
+            0x00u8,
+            0x80u8,
+            vec![
+                r##"\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\u000B\f\r\u000E\u000F"##,
+                r##"\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\u001B\u001C\u001D\u001E\u001F"##,
+                r##" !\"#$%&'()*+,-./0123456789:;<=>?"##,
+                r##"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"##,
+                r##"`abcdefghijklmnopqrstuvwxyz{|}~\u007F"##,
+            ]
+        ),
     }
 }
