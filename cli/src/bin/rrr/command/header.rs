@@ -5,7 +5,7 @@ use rrr::json_escape_str;
 use std::collections::HashMap;
 use std::fmt;
 
-pub(crate) fn cli() -> Command<'static> {
+pub(crate) fn cli() -> Command {
     Command::new("header")
         .about("Display the header of the specified file")
         .arg(

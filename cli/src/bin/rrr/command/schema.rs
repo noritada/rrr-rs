@@ -7,7 +7,7 @@ use clap::{arg, ArgMatches, Command};
 use console::Term;
 use rrr::SchemaOnelineDisplay;
 
-pub(crate) fn cli() -> Command<'static> {
+pub(crate) fn cli() -> Command {
     Command::new("schema")
         .about("Display the schema of the specified file")
         .arg(arg!(-t --tree "Display in the tree format"))
