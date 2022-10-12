@@ -46,7 +46,7 @@ where
     Ok(())
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Error {
     General,
     Schema(SchemaParseError, Vec<u8>),
@@ -56,7 +56,7 @@ impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Self::General => write!(f, "error in processing data"),
-            Self::Schema(e, b) => e.fmt(f),
+            Self::Schema(e, _b) => e.fmt(f),
         }
     }
 }

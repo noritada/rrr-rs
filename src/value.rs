@@ -143,7 +143,7 @@ mod tests {
         tree.add_value(Value::new_struct())?;
         tree.close_value()?;
 
-        let result = &*tree.get()?;
+        let result = tree.get()?;
         assert_eq!(result, &Value::Struct(RefCell::new(Vec::new())));
         Ok(())
     }
@@ -156,7 +156,7 @@ mod tests {
         tree.add_value(Value::Number(1u8.into()))?;
         tree.close_value()?;
 
-        let result = &*tree.get()?;
+        let result = tree.get()?;
         assert_eq!(
             result,
             &Value::Struct(RefCell::new(vec![
@@ -176,7 +176,7 @@ mod tests {
         tree.close_value()?;
         tree.close_value()?;
 
-        let result = &*tree.get()?;
+        let result = tree.get()?;
         assert_eq!(
             result,
             &Value::Struct(RefCell::new(vec![Rc::new(Value::Struct(RefCell::new(
@@ -196,7 +196,7 @@ mod tests {
         tree.close_value()?;
         tree.close_value()?;
 
-        let result = &*tree.get()?;
+        let result = tree.get()?;
         assert_eq!(
             result,
             &Value::Struct(RefCell::new(vec![
@@ -217,7 +217,7 @@ mod tests {
         tree.close_value()?;
         tree.close_value()?;
 
-        let result = &*tree.get()?;
+        let result = tree.get()?;
         assert_eq!(
             result,
             &Value::Struct(RefCell::new(vec![Rc::new(Value::Struct(RefCell::new(
@@ -258,7 +258,7 @@ mod tests {
         tree.close_value()?;
         tree.close_value()?;
 
-        let result = &*tree.get()?;
+        let result = tree.get()?;
         assert_eq!(
             result,
             &Value::Struct(RefCell::new(vec![
@@ -309,7 +309,7 @@ mod tests {
         tree.close_value()?;
         tree.close_value()?;
 
-        let result = &*tree.get()?;
+        let result = tree.get()?;
         assert_eq!(
             result,
             &Value::Struct(RefCell::new(vec![
