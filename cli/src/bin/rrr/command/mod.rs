@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::{ArgMatches, Command};
 
-pub(crate) fn cli() -> Vec<Command<'static>> {
+pub(crate) fn cli() -> Vec<Command> {
     vec![dump::cli(), header::cli(), schema::cli()]
 }
 

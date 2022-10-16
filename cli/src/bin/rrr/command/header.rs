@@ -5,11 +5,11 @@ use rrr::json_escape_str;
 use std::collections::HashMap;
 use std::fmt;
 
-pub(crate) fn cli() -> Command<'static> {
+pub(crate) fn cli() -> Command {
     Command::new("header")
         .about("Display the header of the specified file")
         .arg(
-            arg!(N: -b --bytes "Read only the first N bytes from the S3 bucket")
+            arg!(N: -b --bytes <N> "Read only the first N bytes from the S3 bucket")
                 .default_value("4096")
                 .value_parser(clap::value_parser!(usize)),
         )

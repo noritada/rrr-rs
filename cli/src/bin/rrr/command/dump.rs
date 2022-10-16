@@ -3,7 +3,7 @@ use anyhow::Result;
 use clap::{arg, ArgMatches, Command};
 use rrr::JsonDisplay;
 
-pub(crate) fn cli() -> Command<'static> {
+pub(crate) fn cli() -> Command {
     Command::new("dump")
         .about("Dump the data of the specified file")
         .arg(arg!(<PATH_OR_URI> "Path or S3 URI of the file").required(true))
