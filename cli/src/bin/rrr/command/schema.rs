@@ -3,16 +3,16 @@ use crate::{
     visitor::{FieldCounter, SchemaTreeDisplay},
 };
 use anyhow::Result;
-use clap::{arg, ArgMatches, Command};
+use clap::{arg, ArgAction, ArgMatches, Command};
 use console::Term;
 use rrr::SchemaOnelineDisplay;
 
 pub(crate) fn cli() -> Command {
     Command::new("schema")
         .about("Display the schema of the specified file")
-        .arg(arg!(-t --tree "Display in the tree format"))
+        .arg(arg!(-t --tree "Display in the tree format").action(ArgAction::SetTrue))
         .arg(
-            arg!(N: -b --bytes "Read only the first N bytes from the S3 bucket")
+            arg!(N: -b --bytes <N> "Read only the first N bytes from the S3 bucket")
                 .default_value("4096")
                 .value_parser(clap::value_parser!(usize)),
         )
@@ -24,7 +24,7 @@ pub(crate) async fn exec(args: &ArgMatches) -> Result<()> {
     let n_bytes = args.get_one::<usize>("N").unwrap();
     let (schema, _, _) = read_from_source(fname, false, Some(n_bytes)).await?;
 
-    if args.contains_id("tree") {
+    if args.get_flag("tree") {
         let user_attended = console::user_attended();
 
         let term = Term::stdout();
