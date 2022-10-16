@@ -36,8 +36,12 @@ where
         let schema: Schema = schema.as_slice().try_into()?;
 
         let body = if with_body {
+            let body_size = map.get("data_size".as_bytes()).ok_or(Error::General)?;
+            let body_size = String::from_utf8_lossy(body_size)
+                .parse::<usize>()
+                .or_else(|_| Err(Error::General))?;
             let compress_type = map.get("compress_type".as_bytes());
-            self.read_body(&compress_type)?
+            self.read_body(body_size, &compress_type)?
         } else {
             Vec::new()
         };
@@ -100,22 +104,26 @@ where
         Ok(map)
     }
 
-    fn read_body(&mut self, compress_type: &Option<&Vec<u8>>) -> Result<Vec<u8>, Error> {
-        let mut buf = Vec::new();
+    fn read_body(
+        &mut self,
+        body_size: usize,
+        compress_type: &Option<&Vec<u8>>,
+    ) -> Result<Vec<u8>, Error> {
+        let mut buf = vec![0; body_size];
+        self.inner.read_exact(&mut buf)?;
         let buf = match compress_type.map(|s| s.as_slice()) {
-            None => {
-                self.inner.read_to_end(&mut buf)?;
-                buf
-            }
+            None => buf,
             Some(b"gzip") => {
-                let mut reader = GzDecoder::new(&mut self.inner);
-                reader.read_to_end(&mut buf)?;
-                buf
+                let mut reader = GzDecoder::new(&buf[..]);
+                let mut decoded = Vec::new();
+                reader.read_to_end(&mut decoded)?;
+                decoded
             }
             Some(b"bzip2") => {
-                let mut reader = BzDecoder::new(&mut self.inner);
-                reader.read_to_end(&mut buf)?;
-                buf
+                let mut reader = BzDecoder::new(&buf[..]);
+                let mut decoded = Vec::new();
+                reader.read_to_end(&mut decoded)?;
+                decoded
             }
             _ => return Err(Error::General),
         };
