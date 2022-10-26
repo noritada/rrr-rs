@@ -434,7 +434,7 @@ impl std::fmt::Display for SchemaParseErrorKind {
             Self::UnknownBuiltinType => "unknown built type found",
             Self::UnknownToken => "unknown token found",
         };
-        write!(f, "{}", description)
+        write!(f, "{description}")
     }
 }
 

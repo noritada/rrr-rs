@@ -17,7 +17,7 @@ fn app() -> Command {
 async fn main() {
     if let Err(err) = try_main().await {
         let red = console::Style::new().red();
-        eprintln!("{}: {}", red.apply_to("error"), err);
+        eprintln!("{}: {err}", red.apply_to("error"));
         std::process::exit(1);
     }
 }

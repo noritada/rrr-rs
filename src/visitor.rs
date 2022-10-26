@@ -41,7 +41,7 @@ impl<'a, 'f> SchemaOnelineFormatter<'a, 'f> {
     }
 
     fn write_name(&mut self, name: &str) -> fmt::Result {
-        write!(self.f, "{}:", name)
+        write!(self.f, "{name}:")
     }
 }
 
@@ -86,8 +86,8 @@ impl<'a, 'f> AstVisitor for SchemaOnelineFormatter<'a, 'f> {
         {
             self.write_name(name)?;
             match len {
-                Len::Fixed(n) => write!(self.f, "{{{}", n),
-                Len::Variable(s) => write!(self.f, "{{{}", s),
+                Len::Fixed(n) => write!(self.f, "{{{n}"),
+                Len::Variable(s) => write!(self.f, "{{{s}"),
             }?;
             write!(self.f, "}}")?;
             self.visit(child)
@@ -108,7 +108,7 @@ impl<'a, 'f> AstVisitor for SchemaOnelineFormatter<'a, 'f> {
             AstKind::Float32 => write!(self.f, "FLOAT32"),
             AstKind::Float64 => write!(self.f, "FLOAT64"),
             AstKind::Str => write!(self.f, "STR"),
-            AstKind::NStr(n) => write!(self.f, "<{}>NSTR", n),
+            AstKind::NStr(n) => write!(self.f, "<{n}>NSTR"),
             AstKind::Struct(..) => unreachable!(),
             AstKind::Array(..) => unreachable!(),
         }?;
@@ -152,14 +152,14 @@ impl<'a, 'f, 'b> JsonSerializer<'a, 'f, 'b> {
 
     fn write_number(&mut self, n: &Number) -> fmt::Result {
         match *n {
-            Number::Int8(n) => write!(self.f, "{}", n),
-            Number::Int16(n) => write!(self.f, "{}", n),
-            Number::Int32(n) => write!(self.f, "{}", n),
-            Number::UInt8(n) => write!(self.f, "{}", n),
-            Number::UInt16(n) => write!(self.f, "{}", n),
-            Number::UInt32(n) => write!(self.f, "{}", n),
-            Number::Float32(n) => write!(self.f, "{}", n),
-            Number::Float64(n) => write!(self.f, "{}", n),
+            Number::Int8(n) => write!(self.f, "{n}"),
+            Number::Int16(n) => write!(self.f, "{n}"),
+            Number::Int32(n) => write!(self.f, "{n}"),
+            Number::UInt8(n) => write!(self.f, "{n}"),
+            Number::UInt16(n) => write!(self.f, "{n}"),
+            Number::UInt32(n) => write!(self.f, "{n}"),
+            Number::Float32(n) => write!(self.f, "{n}"),
+            Number::Float64(n) => write!(self.f, "{n}"),
         }
     }
 

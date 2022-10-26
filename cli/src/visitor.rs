@@ -105,7 +105,7 @@ impl<'a, 'f> SchemaTreeFormatter<'a, 'f> {
             } else {
                 "└── "
             };
-            write!(self.f, "{}", symbol)?;
+            write!(self.f, "{symbol}")?;
         }
         Ok(())
     }
@@ -123,13 +123,13 @@ impl<'a, 'f> SchemaTreeFormatter<'a, 'f> {
             AstKind::Float32 => write!(self.f, "FLOAT32"),
             AstKind::Float64 => write!(self.f, "FLOAT64"),
             AstKind::Str => write!(self.f, "STR"),
-            AstKind::NStr(n) => write!(self.f, "<{}>NSTR", n),
+            AstKind::NStr(n) => write!(self.f, "<{n}>NSTR"),
             AstKind::Struct(..) => write!(self.f, "Struct"),
             AstKind::Array(len, ..) => {
                 write!(self.f, "Array (length: ")?;
                 match len {
-                    Len::Fixed(n) => write!(self.f, "{}", n),
-                    Len::Variable(s) => write!(self.f, "{}", s),
+                    Len::Fixed(n) => write!(self.f, "{n}"),
+                    Len::Variable(s) => write!(self.f, "{s}"),
                 }?;
                 write!(self.f, ")")
             }

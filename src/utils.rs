@@ -31,7 +31,7 @@ pub fn json_escape_str(input: &str) -> Cow<str> {
             escaped_string.push_str(&input[..i]);
             for byte in input[i..].as_bytes().iter() {
                 match json_escape_byte(byte) {
-                    Some(b'u') => escaped_string.push_str(&format!("\\u{:04X}", byte)),
+                    Some(b'u') => escaped_string.push_str(&format!("\\u{byte:04X}")),
                     Some(b) => {
                         escaped_string.push('\\');
                         escaped_string.push(b as char);

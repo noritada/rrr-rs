@@ -38,7 +38,7 @@ impl<'a> fmt::Display for HeaderDisplay<'a> {
             let key = json_escape_str(&key);
             let val = String::from_utf8_lossy(val);
             let val = json_escape_str(&val);
-            write!(f, "\"{}\":\"{}\"", key, val)?;
+            write!(f, "\"{key}\":\"{val}\"")?;
             if pair.peek().is_some() {
                 write!(f, ",")?;
             }
