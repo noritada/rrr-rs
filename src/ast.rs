@@ -221,13 +221,10 @@ impl<'b> SchemaParser<'b> {
         };
 
         self.consume_symbol(TokenKind::RBrace)?;
-        self.consume_symbol(TokenKind::LBracket)?;
-        let struct_kind = self.parse_field_list()?;
-        // no tokens other than TokenKind::RBracket or EOF appears
-        self.consume_next_token()?;
+        let child_kind = self.parse_type()?;
 
         let struct_node = Ast {
-            kind: struct_kind,
+            kind: child_kind,
             name: "[]".to_owned(),
         };
         Ok(AstKind::Array(len, Box::new(struct_node)))
@@ -535,7 +532,33 @@ mod tests {
     }
 
     #[test]
-    fn parse_single_fixed_length_array() {
+    fn parse_single_fixed_length_builtin_type_array() {
+        let input = "fld1:{3}INT8";
+        let parser = SchemaParser::new(input.as_bytes());
+        let actual = parser.parse();
+        let expected_ast = Ast {
+            name: "".to_owned(),
+            kind: AstKind::Struct(vec![Ast {
+                name: "fld1".to_owned(),
+                kind: AstKind::Array(
+                    Len::Fixed(3),
+                    Box::new(Ast {
+                        name: "[]".to_owned(),
+                        kind: AstKind::Int8,
+                    }),
+                ),
+            }]),
+        };
+        let expected = Ok(Schema {
+            ast: expected_ast,
+            params: ParamStack::new(),
+        });
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn parse_single_fixed_length_struct_array() {
         let input = "fld1:{3}[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32]";
         let parser = SchemaParser::new(input.as_bytes());
         let actual = parser.parse();
@@ -574,7 +597,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_single_variable_length_array() {
+    fn parse_single_variable_length_struct_array() {
         let input = "fld1:INT8,fld2:{fld1}[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32]";
         let parser = SchemaParser::new(input.as_bytes());
         let actual = parser.parse();

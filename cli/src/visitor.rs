@@ -144,13 +144,7 @@ impl<'a, 'f> AstVisitor for SchemaTreeFormatter<'a, 'f> {
             kind: AstKind::Struct(children),
         } = node
         {
-            let name = match name.as_str() {
-                "" => "/",
-                "[]" => "[index]",
-                s => s,
-            };
-
-            self.write_line(name, &node.kind)?;
+            self.write_line(prettify_special_field_name(name), &node.kind)?;
             let mut children = children.iter().peekable();
             while let Some(child) = children.next() {
                 let has_next_sibling = children.peek().is_some();
@@ -170,7 +164,7 @@ impl<'a, 'f> AstVisitor for SchemaTreeFormatter<'a, 'f> {
             ..
         } = node
         {
-            self.write_line(&node.name, &node.kind)?;
+            self.write_line(prettify_special_field_name(&node.name), &node.kind)?;
             self.levels.push(false);
             self.visit(child)?;
             self.levels.pop();
@@ -181,8 +175,16 @@ impl<'a, 'f> AstVisitor for SchemaTreeFormatter<'a, 'f> {
     }
 
     fn visit_builtin(&mut self, node: &Ast) -> Result<(), Error> {
-        self.write_line(&node.name, &node.kind)?;
+        self.write_line(prettify_special_field_name(&node.name), &node.kind)?;
         Ok(())
+    }
+}
+
+fn prettify_special_field_name(name: &str) -> &str {
+    match name {
+        "" => "/",
+        "[]" => "[index]",
+        s => s,
     }
 }
 
@@ -192,7 +194,21 @@ mod tests {
     use rrr::Schema;
 
     #[test]
-    fn schema_tree_display() {
+    fn schema_tree_display_for_data_with_fixed_length_builtin_type_array() {
+        let input = "fld1:{3}INT8";
+        let schema = input.parse::<Schema>().unwrap();
+        let actual = format!("{}", SchemaTreeDisplay(&schema.ast));
+        let actual = console::strip_ansi_codes(&actual);
+        let expected = "/: Struct
+└── fld1: Array (length: 3)
+    └── [index]: INT8
+";
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn schema_tree_display_for_data_with_variable_length_struct_array() {
         let input = "fld1:[sfld1:[ssfld1:<4>NSTR,ssfld2:STR,ssfld3:INT32]],\
             fld2:INT8,fld3:{fld1}[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32]";
         let schema = input.parse::<Schema>().unwrap();

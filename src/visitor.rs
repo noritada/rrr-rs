@@ -41,7 +41,11 @@ impl<'a, 'f> SchemaOnelineFormatter<'a, 'f> {
     }
 
     fn write_name(&mut self, name: &str) -> fmt::Result {
-        write!(self.f, "{name}:")
+        let is_array_element = name == "[]";
+        if !is_array_element {
+            write!(self.f, "{name}:")?;
+        }
+        Ok(())
     }
 }
 
@@ -52,12 +56,9 @@ impl<'a, 'f> AstVisitor for SchemaOnelineFormatter<'a, 'f> {
             kind: AstKind::Struct(children),
         } = node
         {
-            let is_array_element = name == "[]";
             let is_root = name.is_empty();
-            if !is_array_element && !is_root {
-                self.write_name(name)?;
-            }
             if !is_root {
+                self.write_name(name)?;
                 write!(self.f, "[")?;
             }
 
@@ -249,7 +250,16 @@ mod tests {
     use crate::ast::Schema;
 
     #[test]
-    fn schema_oneline_display() {
+    fn schema_oneline_display_for_data_with_fixed_length_builtin_type_array() {
+        let input = "fld1:{3}INT8";
+        let schema = input.parse::<Schema>().unwrap();
+        let output = format!("{}", SchemaOnelineDisplay(&schema.ast));
+
+        assert_eq!(output, input);
+    }
+
+    #[test]
+    fn schema_oneline_display_for_data_with_variable_length_struct_array() {
         let input = "fld1:[sfld1:[ssfld1:<4>NSTR,ssfld2:STR,ssfld3:INT32]],\
             fld2:INT8,fld3:{fld1}[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32]";
         let schema = input.parse::<Schema>().unwrap();
@@ -259,7 +269,26 @@ mod tests {
     }
 
     #[test]
-    fn json_serialization() {
+    fn json_serialization_for_data_with_fixed_length_builtin_type_array() {
+        let input = "fld1:{3}INT8";
+        let schema = input.parse::<Schema>().unwrap();
+        let buf = vec![0x01, 0x02, 0x03];
+        let actual = format!("{}", JsonDisplay::new(&schema, &buf));
+        let expected = r#"
+            {
+                "fld1": [1, 2, 3]
+            }
+        "#;
+        let expected = expected
+            .chars()
+            .filter(|c| *c != ' ' && *c != '\n')
+            .collect::<String>();
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn json_serialization_for_data_with_variable_length_struct_array() {
         let input = "count:UINT8,fld1:{count}[sfld1:[ssfld1:{count}[count:UINT8,sssfld1:{count}[ssssfld1:{count}[sssssfld1:UINT8,count:UINT8]]]]]";
         let schema = input.parse::<Schema>().unwrap();
         let buf = vec![
