@@ -94,86 +94,71 @@ impl<'w> BufWalker<'w> {
 mod tests {
     use super::*;
 
-    #[test]
-    fn read_i8() -> Result<(), Box<dyn std::error::Error>> {
-        let buf = vec![0x00, 0x00, 0xfe, 0x00, 0x00];
-        let mut walker = BufWalker::new(buf.as_slice());
-        walker.set_pos(2);
-        let result = walker.read_number::<i8>()?;
-        assert_eq!(result, -2);
-        Ok(())
+    macro_rules! test_reading_number {
+        ($(($name:ident, $buf:expr, $ty:ident, $expected:expr),)*) => ($(
+            #[test]
+            fn $name() -> Result<(), Box<dyn std::error::Error>> {
+                let buf = $buf;
+                let mut walker = BufWalker::new(buf.as_slice());
+                walker.set_pos(2);
+                let result = walker.read_number::<$ty>()?;
+                assert_eq!(result, $expected);
+                Ok(())
+            }
+        )*);
     }
 
-    #[test]
-    fn read_i16() -> Result<(), Box<dyn std::error::Error>> {
-        let buf = vec![0x00, 0x00, 0xfe, 0xdc, 0x00, 0x00];
-        let mut walker = BufWalker::new(buf.as_slice());
-        walker.set_pos(2);
-        let result = walker.read_number::<i16>()?;
-        assert_eq!(result, -292);
-        Ok(())
-    }
-
-    #[test]
-    fn read_i32() -> Result<(), Box<dyn std::error::Error>> {
-        let buf = vec![0x00, 0x00, 0xfe, 0xdc, 0xba, 0x98, 0x00];
-        let mut walker = BufWalker::new(buf.as_slice());
-        walker.set_pos(2);
-        let result = walker.read_number::<i32>()?;
-        assert_eq!(result, -19088744);
-        Ok(())
-    }
-
-    #[test]
-    fn read_u8() -> Result<(), Box<dyn std::error::Error>> {
-        let buf = vec![0x00, 0x00, 0xfe, 0x00, 0x00];
-        let mut walker = BufWalker::new(buf.as_slice());
-        walker.set_pos(2);
-        let result = walker.read_number::<u8>()?;
-        assert_eq!(result, 254);
-        Ok(())
-    }
-
-    #[test]
-    fn read_u16() -> Result<(), Box<dyn std::error::Error>> {
-        let buf = vec![0x00, 0x00, 0xfe, 0xdc, 0x00, 0x00];
-        let mut walker = BufWalker::new(buf.as_slice());
-        walker.set_pos(2);
-        let result = walker.read_number::<u16>()?;
-        assert_eq!(result, 65244);
-        Ok(())
-    }
-
-    #[test]
-    fn read_u32() -> Result<(), Box<dyn std::error::Error>> {
-        let buf = vec![0x00, 0x00, 0xfe, 0xdc, 0xba, 0x98, 0x00, 0x00];
-        let mut walker = BufWalker::new(buf.as_slice());
-        walker.set_pos(2);
-        let result = walker.read_number::<u32>()?;
-        assert_eq!(result, 4275878552);
-        Ok(())
-    }
-
-    #[test]
-    fn read_f32() -> Result<(), Box<dyn std::error::Error>> {
-        let buf = vec![0x00, 0x00, 0xbf, 0x80, 0x00, 0x00, 0x00, 0x00];
-        let mut walker = BufWalker::new(buf.as_slice());
-        walker.set_pos(2);
-        let result = walker.read_number::<f32>()?;
-        assert_eq!(result, -1.0);
-        Ok(())
-    }
-
-    #[test]
-    fn read_f64() -> Result<(), Box<dyn std::error::Error>> {
-        let buf = vec![
-            0x00, 0x00, 0xbf, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        ];
-        let mut walker = BufWalker::new(buf.as_slice());
-        walker.set_pos(2);
-        let result = walker.read_number::<f64>()?;
-        assert_eq!(result, -1.0);
-        Ok(())
+    test_reading_number! {
+        (
+            reading_i8,
+            vec![0x00, 0x00, 0xfe, 0x00, 0x00],
+            i8,
+            -2
+        ),
+        (
+            reading_i16,
+            vec![0x00, 0x00, 0xfe, 0xdc, 0x00, 0x00],
+            i16,
+            -292
+        ),
+        (
+            reading_i32,
+            vec![0x00, 0x00, 0xfe, 0xdc, 0xba, 0x98, 0x00],
+            i32,
+            -19088744
+        ),
+        (
+            reading_u8,
+            vec![0x00, 0x00, 0xfe, 0x00, 0x00],
+            u8,
+            254
+        ),
+        (
+            reading_u16,
+            vec![0x00, 0x00, 0xfe, 0xdc, 0x00, 0x00],
+            u16,
+            65244
+        ),
+        (
+            reading_u32,
+            vec![0x00, 0x00, 0xfe, 0xdc, 0xba, 0x98, 0x00, 0x00],
+            u32,
+            4275878552
+        ),
+        (
+            reading_f32,
+            vec![0x00, 0x00, 0xbf, 0x80, 0x00, 0x00, 0x00, 0x00],
+            f32,
+            -1.0
+        ),
+        (
+            reading_f64,
+            vec![
+                0x00, 0x00, 0xbf, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            ],
+            f64,
+            -1.0
+        ),
     }
 
     #[test]

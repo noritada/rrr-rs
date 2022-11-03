@@ -193,28 +193,35 @@ mod tests {
     use super::*;
     use rrr::Schema;
 
-    #[test]
-    fn schema_tree_display_for_data_with_fixed_length_builtin_type_array() {
-        let input = "fld1:{3}INT8";
-        let schema = input.parse::<Schema>().unwrap();
-        let actual = format!("{}", SchemaTreeDisplay(&schema.ast));
-        let actual = console::strip_ansi_codes(&actual);
-        let expected = "/: Struct
-└── fld1: Array (length: 3)
-    └── [index]: INT8
-";
+    macro_rules! test_schema_tree_display {
+        ($(($name:ident, $input:expr, $expected:expr),)*) => ($(
+            #[test]
+            fn $name() {
+                let input = $input;
+                let schema = input.parse::<Schema>().unwrap();
+                let actual = format!("{}", SchemaTreeDisplay(&schema.ast));
+                let actual = console::strip_ansi_codes(&actual);
+                let expected = $expected;
 
-        assert_eq!(actual, expected);
+                assert_eq!(actual, expected);
+            }
+        )*);
     }
 
-    #[test]
-    fn schema_tree_display_for_data_with_variable_length_struct_array() {
-        let input = "fld1:[sfld1:[ssfld1:<4>NSTR,ssfld2:STR,ssfld3:INT32]],\
-            fld2:INT8,fld3:{fld1}[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32]";
-        let schema = input.parse::<Schema>().unwrap();
-        let actual = format!("{}", SchemaTreeDisplay(&schema.ast));
-        let actual = console::strip_ansi_codes(&actual);
-        let expected = "/: Struct
+    test_schema_tree_display! {
+        (
+            schema_tree_display_for_data_with_fixed_length_builtin_type_array,
+            "fld1:{3}INT8",
+            "/: Struct
+└── fld1: Array (length: 3)
+    └── [index]: INT8
+"
+        ),
+        (
+            schema_tree_display_for_data_with_variable_length_struct_array,
+            "fld1:[sfld1:[ssfld1:<4>NSTR,ssfld2:STR,ssfld3:INT32]],\
+            fld2:INT8,fld3:{fld1}[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32]",
+            "/: Struct
 ├── fld1: Struct
 │   └── sfld1: Struct
 │       ├── ssfld1: <4>NSTR
@@ -226,8 +233,7 @@ mod tests {
         ├── sfld1: <4>NSTR
         ├── sfld2: STR
         └── sfld3: INT32
-";
-
-        assert_eq!(actual, expected);
+"
+        ),
     }
 }

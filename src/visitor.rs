@@ -249,144 +249,153 @@ mod tests {
     use super::*;
     use crate::ast::Schema;
 
-    #[test]
-    fn schema_oneline_display_for_data_with_fixed_length_builtin_type_array() {
-        let input = "fld1:{3}INT8";
-        let schema = input.parse::<Schema>().unwrap();
-        let output = format!("{}", SchemaOnelineDisplay(&schema.ast));
+    macro_rules! test_schema_oneline_display {
+        ($(($name:ident, $schema:expr),)*) => ($(
+            #[test]
+            fn $name() {
+                let input = $schema;
+                let schema = input.parse::<Schema>().unwrap();
+                let output = format!("{}", SchemaOnelineDisplay(&schema.ast));
 
-        assert_eq!(output, input);
-    }
-
-    #[test]
-    fn schema_oneline_display_for_data_with_variable_length_struct_array() {
-        let input = "fld1:[sfld1:[ssfld1:<4>NSTR,ssfld2:STR,ssfld3:INT32]],\
-            fld2:INT8,fld3:{fld1}[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32]";
-        let schema = input.parse::<Schema>().unwrap();
-        let output = format!("{}", SchemaOnelineDisplay(&schema.ast));
-
-        assert_eq!(output, input);
-    }
-
-    #[test]
-    fn json_serialization_for_data_with_fixed_length_builtin_type_array() {
-        let input = "fld1:{3}INT8";
-        let schema = input.parse::<Schema>().unwrap();
-        let buf = vec![0x01, 0x02, 0x03];
-        let actual = format!("{}", JsonDisplay::new(&schema, &buf));
-        let expected = r#"
-            {
-                "fld1": [1, 2, 3]
+                assert_eq!(output, input);
             }
-        "#;
-        let expected = expected
-            .chars()
-            .filter(|c| *c != ' ' && *c != '\n')
-            .collect::<String>();
-
-        assert_eq!(actual, expected);
+        )*);
     }
 
-    #[test]
-    fn json_serialization_for_data_with_variable_length_struct_array() {
-        let input = "count:UINT8,fld1:{count}[sfld1:[ssfld1:{count}[count:UINT8,sssfld1:{count}[ssssfld1:{count}[sssssfld1:UINT8,count:UINT8]]]]]";
-        let schema = input.parse::<Schema>().unwrap();
-        let buf = vec![
-            0x02, 0x02, 0x01, 0x01, 0x02, 0x02, 0x03, 0x03, 0x04, 0x04, 0x03, 0x01, 0x01, 0x02,
-            0x02, 0x03, 0x03, 0x04, 0x04, 0x05, 0x05, 0x06, 0x06, 0x07, 0x07, 0x08, 0x08, 0x09,
-            0x09, 0x01, 0x01, 0x01, 0x02, 0x01, 0x01, 0x02, 0x02, 0x03, 0x03, 0x04, 0x04,
-        ];
-        let actual = format!("{}", JsonDisplay::new(&schema, &buf));
-        let expected = r#"
-            {
-                "count": 2,
-                "fld1": [
-                    {"sfld1": {
-                        "ssfld1": [
-                            {
-                                "count": 2,
-                                "sssfld1": [
-                                    {
-                                        "ssssfld1": [
-                                            {"sssssfld1": 1, "count": 1},
-                                            {"sssssfld1": 2, "count": 2}
-                                        ]
-                                    },
-                                    {
-                                        "ssssfld1": [
-                                            {"sssssfld1": 3, "count": 3},
-                                            {"sssssfld1": 4, "count": 4}
-                                        ]
-                                    }
-                                ]
-                            },
-                            {
-                                "count": 3,
-                                "sssfld1": [
-                                    {
-                                        "ssssfld1": [
-                                            {"sssssfld1": 1, "count": 1},
-                                            {"sssssfld1": 2, "count": 2},
-                                            {"sssssfld1": 3, "count": 3}
-                                        ]
-                                    },
-                                    {
-                                        "ssssfld1": [
-                                            {"sssssfld1": 4, "count": 4},
-                                            {"sssssfld1": 5, "count": 5},
-                                            {"sssssfld1": 6, "count": 6}
-                                        ]
-                                    },
-                                    {
-                                        "ssssfld1": [
-                                            {"sssssfld1": 7, "count": 7},
-                                            {"sssssfld1": 8, "count": 8},
-                                            {"sssssfld1": 9, "count": 9}
-                                        ]
-                                    }
-                                ]
-                            }
-                        ]
-                    }},
-                    {"sfld1": {
-                        "ssfld1": [
-                            {
-                                "count": 1,
-                                "sssfld1": [
-                                    {
-                                        "ssssfld1": [
-                                            {"sssssfld1": 1, "count": 1}
-                                        ]
-                                    }
-                                ]
-                            },
-                            {
-                                "count": 2,
-                                "sssfld1": [
-                                    {
-                                        "ssssfld1": [
-                                            {"sssssfld1": 1, "count": 1},
-                                            {"sssssfld1": 2, "count": 2}
-                                        ]
-                                    },
-                                    {
-                                        "ssssfld1": [
-                                            {"sssssfld1": 3, "count": 3},
-                                            {"sssssfld1": 4, "count": 4}
-                                        ]
-                                    }
-                                ]
-                            }
-                        ]
-                    }}
-                ]
-            }
-        "#;
-        let expected = expected
-            .chars()
-            .filter(|c| *c != ' ' && *c != '\n')
-            .collect::<String>();
+    test_schema_oneline_display! {
+        (
+            schema_oneline_display_for_data_with_fixed_length_builtin_type_array,
+            "fld1:{3}INT8"
+        ),
+        (
+            schema_oneline_display_for_data_with_variable_length_struct_array,
+            "fld1:[sfld1:[ssfld1:<4>NSTR,ssfld2:STR,ssfld3:INT32]],\
+            fld2:INT8,fld3:{fld1}[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32]"
+        ),
+    }
 
-        assert_eq!(actual, expected);
+    macro_rules! test_json_serialization {
+        ($(($name:ident, $schema:expr, $buf:expr, $expected:expr),)*) => ($(
+            #[test]
+            fn $name() {
+                let schema = $schema.parse::<Schema>().unwrap();
+                let buf = $buf;
+                let actual = format!("{}", JsonDisplay::new(&schema, &buf));
+                let expected = $expected
+                    .chars()
+                    .filter(|c| *c != ' ' && *c != '\n')
+                    .collect::<String>();
+
+                assert_eq!(actual, expected);
+            }
+        )*);
+    }
+
+    test_json_serialization! {
+        (
+            json_serialization_for_data_with_fixed_length_builtin_type_array,
+            "fld1:{3}INT8",
+            vec![0x01, 0x02, 0x03],
+            r#"
+                {
+                    "fld1": [1, 2, 3]
+                }
+            "#
+        ),
+        (
+            json_serialization_for_data_with_variable_length_struct_array,
+            "count:UINT8,fld1:{count}[sfld1:[ssfld1:{count}[count:UINT8,sssfld1:{count}[ssssfld1:\
+            {count}[sssssfld1:UINT8,count:UINT8]]]]]",
+            vec![
+                0x02, 0x02, 0x01, 0x01, 0x02, 0x02, 0x03, 0x03, 0x04, 0x04, 0x03, 0x01, 0x01, 0x02,
+                0x02, 0x03, 0x03, 0x04, 0x04, 0x05, 0x05, 0x06, 0x06, 0x07, 0x07, 0x08, 0x08, 0x09,
+                0x09, 0x01, 0x01, 0x01, 0x02, 0x01, 0x01, 0x02, 0x02, 0x03, 0x03, 0x04, 0x04,
+            ],
+            r#"
+                {
+                    "count": 2,
+                    "fld1": [
+                        {"sfld1": {
+                            "ssfld1": [
+                                {
+                                    "count": 2,
+                                    "sssfld1": [
+                                        {
+                                            "ssssfld1": [
+                                                {"sssssfld1": 1, "count": 1},
+                                                {"sssssfld1": 2, "count": 2}
+                                            ]
+                                        },
+                                        {
+                                            "ssssfld1": [
+                                                {"sssssfld1": 3, "count": 3},
+                                                {"sssssfld1": 4, "count": 4}
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "count": 3,
+                                    "sssfld1": [
+                                        {
+                                            "ssssfld1": [
+                                                {"sssssfld1": 1, "count": 1},
+                                                {"sssssfld1": 2, "count": 2},
+                                                {"sssssfld1": 3, "count": 3}
+                                            ]
+                                        },
+                                        {
+                                            "ssssfld1": [
+                                                {"sssssfld1": 4, "count": 4},
+                                                {"sssssfld1": 5, "count": 5},
+                                                {"sssssfld1": 6, "count": 6}
+                                            ]
+                                        },
+                                        {
+                                            "ssssfld1": [
+                                                {"sssssfld1": 7, "count": 7},
+                                                {"sssssfld1": 8, "count": 8},
+                                                {"sssssfld1": 9, "count": 9}
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }},
+                        {"sfld1": {
+                            "ssfld1": [
+                                {
+                                    "count": 1,
+                                    "sssfld1": [
+                                        {
+                                            "ssssfld1": [
+                                                {"sssssfld1": 1, "count": 1}
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "count": 2,
+                                    "sssfld1": [
+                                        {
+                                            "ssssfld1": [
+                                                {"sssssfld1": 1, "count": 1},
+                                                {"sssssfld1": 2, "count": 2}
+                                            ]
+                                        },
+                                        {
+                                            "ssssfld1": [
+                                                {"sssssfld1": 3, "count": 3},
+                                                {"sssssfld1": 4, "count": 4}
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }}
+                    ]
+                }
+            "#
+        ),
     }
 }
