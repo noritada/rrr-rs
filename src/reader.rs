@@ -130,3 +130,136 @@ where
         Ok(buf)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::io::Cursor;
+
+    use super::*;
+
+    macro_rules! test_data_size_handling_for_uncompressed_body {
+        ($(($name:ident, $num_extra_bytes:expr, $expected_body:expr),)*) => ($(
+            #[test]
+            fn $name() {
+                let body = b"\x00\x01\x02\x03".to_vec();
+                let body_size = body.len() as isize + $num_extra_bytes;
+                let header = format!(
+                    "WN
+data_size={body_size}
+format=field:{{10}}UINT8
+\x04\x1a"
+                );
+                let bytes = [header.as_bytes(), &body].concat();
+
+                let mut reader = DataReader::new(Cursor::new(&bytes));
+                let actual_body = reader.read(true).map(|(_, _, body_returned)| body_returned);
+                assert_eq!(actual_body, $expected_body);
+            }
+        )*);
+    }
+
+    test_data_size_handling_for_uncompressed_body! {
+        (
+            data_size_handling_for_uncompressed_body_with_no_extra_bytes,
+            0,
+            Ok(b"\x00\x01\x02\x03".to_vec())
+        ),
+        (
+            data_size_handling_for_uncompressed_body_with_negative_extra_bytes,
+            -1,
+            Ok(b"\x00\x01\x02".to_vec())
+        ),
+        (
+            data_size_handling_for_uncompressed_body_with_positive_extra_bytes,
+            1,
+            Err(crate::Error::General)
+        ),
+    }
+
+    macro_rules! test_data_size_handling_for_gzip_compressed_body {
+        ($(($name:ident, $num_extra_bytes:expr, $expected_body:expr),)*) => ($(
+            #[test]
+            fn $name() {
+                let body = (b"\
+\x1f\x8b\x08\x08\x37\xd5\x67\x63\x02\xff\x66\x69\x6c\x65\x00\x63\
+\x60\x64\x62\x06\x00\x13\x86\xb9\x8b\x04\x00\x00\x00")
+                    .to_vec();
+                let body_size = body.len() as isize + $num_extra_bytes;
+                let header = format!(
+                    "WN
+data_size={body_size}
+compress_type=gzip
+format=field:{{10}}UINT8
+\x04\x1a"
+                );
+                let bytes = [header.as_bytes(), &body].concat();
+
+                let mut reader = DataReader::new(Cursor::new(&bytes));
+                let actual_body = reader.read(true).map(|(_, _, body_returned)| body_returned);
+                assert_eq!(actual_body, $expected_body);
+            }
+        )*);
+    }
+
+    test_data_size_handling_for_gzip_compressed_body! {
+        (
+            data_size_handling_for_gzip_compressed_body_with_no_extra_bytes,
+            0,
+            Ok(b"\x00\x01\x02\x03".to_vec())
+        ),
+        (
+            data_size_handling_for_gzip_compressed_body_with_negative_extra_bytes,
+            -1,
+            Err(crate::Error::General)
+        ),
+        (
+            data_size_handling_for_gzip_compressed_body_with_positive_extra_bytes,
+            1,
+            Err(crate::Error::General)
+        ),
+    }
+
+    macro_rules! test_data_size_handling_for_bzip2_compressed_body {
+        ($(($name:ident, $num_extra_bytes:expr, $expected_body:expr),)*) => ($(
+            #[test]
+            fn $name() {
+                let body = (b"\
+\x42\x5a\x68\x39\x31\x41\x59\x26\x53\x59\x94\x92\x36\xd5\x00\x00\
+\x00\x40\x00\x78\x00\x20\x00\x21\x9a\x68\x33\x4d\x13\x3c\x5d\xc9\
+\x14\xe1\x42\x42\x52\x48\xdb\x54")
+                    .to_vec();
+                let body_size = body.len() as isize + $num_extra_bytes;
+                let header = format!(
+                    "WN
+data_size={body_size}
+compress_type=bzip2
+format=field:{{10}}UINT8
+\x04\x1a"
+                );
+                let bytes = [header.as_bytes(), &body].concat();
+
+                let mut reader = DataReader::new(Cursor::new(&bytes));
+                let actual_body = reader.read(true).map(|(_, _, body_returned)| body_returned);
+                assert_eq!(actual_body, $expected_body);
+            }
+        )*);
+    }
+
+    test_data_size_handling_for_bzip2_compressed_body! {
+        (
+            data_size_handling_for_bzip2_compressed_body_with_no_extra_bytes,
+            0,
+            Ok(b"\x00\x01\x02\x03".to_vec())
+        ),
+        (
+            data_size_handling_for_bzip2_compressed_body_with_negative_extra_bytes,
+            -1,
+            Err(crate::Error::General)
+        ),
+        (
+            data_size_handling_for_bzip2_compressed_body_with_positive_extra_bytes,
+            1,
+            Err(crate::Error::General)
+        ),
+    }
+}
