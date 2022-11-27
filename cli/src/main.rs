@@ -4,11 +4,11 @@ mod diagnostics;
 mod visitor;
 
 use anyhow::Result;
-use clap::{crate_name, crate_version, Command};
+use clap::Command;
 
 fn app() -> Command {
-    Command::new(crate_name!())
-        .version(crate_version!())
+    Command::new(env!("CARGO_BIN_NAME"))
+        .version(env!("CARGO_PKG_VERSION"))
         .arg_required_else_help(true)
         .subcommands(command::cli())
 }

@@ -12,7 +12,7 @@ anyhow = "1"
 aws-config = "0.46"
 aws-sdk-s3 = "0.16"
 bytes = "1"
-clap = { version = "4", features = ["cargo"] }
+clap = "4"
 clap_complete = "4"
 console = "0.15"
 rrr = { path = "..", version = "=0.4.0" }
