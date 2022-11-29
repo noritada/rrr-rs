@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Library `rrr`
+  - Format/syntax support enhancements
+    - Allow non-structs as array elements.
+- CLI application `rrr`
+  - New "completions" subcommand to generate shell completions
+
+### Changed
+
+- Library `rrr`
+  - Non-API changes
+    - Development version of the library's API documentation is now available on GitHub Pages.
+- Others
+  - `aarch64-apple-darwin` is added to the target architecture list in nightly building.
+  - Enabled link time optimization and symbol stripping in release builds to improve runtime performance and reduce the size of builds.
+
 ## [0.4.0] - 2022-08-10
 
 ### Changed
@@ -60,6 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - dump: dump the data in the specified file
     - schema: display the schema of the data in the specified file
 
+[unreleased]: https://github.com/noritada/rrr-rs/compare/v0.4.0...HEAD
 [0.4.0]: https://github.com/noritada/rrr-rs/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/noritada/rrr-rs/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/noritada/rrr-rs/compare/v0.3.0...v0.3.1
