@@ -109,23 +109,45 @@ where
         body_size: usize,
         compress_type: &Option<&Vec<u8>>,
     ) -> Result<Vec<u8>, Error> {
-        let mut buf = vec![0; body_size];
-        self.inner.read_exact(&mut buf)?;
+        // We want to report how many bytes are actually read when the buffer is not filled,
+        // although `read_exact` does not report it.
+        // So, we use `read_to_end` here, assuming that the data is correctly ended.
+        let mut buf = Vec::with_capacity(body_size);
+        self.inner
+            .read_to_end(&mut buf)
+            .map_err(|e| Error::from_string(format!("reading body failed: {e}")))?;
+        let len = buf.len();
+        if len < body_size {
+            return Err(Error::from_string(format!(
+                "unexpected EOF in reading body: {len} bytes read; {body_size} bytes expected"
+            )));
+        }
+        buf.truncate(body_size);
+
         let buf = match compress_type.map(|s| s.as_slice()) {
             None => buf,
             Some(b"gzip") => {
                 let mut reader = GzDecoder::new(&buf[..]);
                 let mut decoded = Vec::new();
-                reader.read_to_end(&mut decoded)?;
+                reader.read_to_end(&mut decoded).map_err(|e| {
+                    Error::from_string(format!("reading gzip-compressed body failed: {e}"))
+                })?;
                 decoded
             }
             Some(b"bzip2") => {
                 let mut reader = BzDecoder::new(&buf[..]);
                 let mut decoded = Vec::new();
-                reader.read_to_end(&mut decoded)?;
+                reader.read_to_end(&mut decoded).map_err(|e| {
+                    Error::from_string(format!("reading bzip2-compressed body failed: {e}"))
+                })?;
                 decoded
             }
-            _ => return Err(Error::General),
+            Some(s) => {
+                let s = String::from_utf8_lossy(s);
+                return Err(Error::from_string(format!(
+                    "unknown \"compress_type\" field value: {s}"
+                )));
+            }
         };
         Ok(buf)
     }
@@ -204,7 +226,9 @@ format=field:{{10}}UINT8
             uncompressed_body_data(),
             1,
             "",
-            Err(crate::Error::General)
+            Err(crate::Error::from_str(
+                "unexpected EOF in reading body: 4 bytes read; 5 bytes expected"
+            ))
         ),
         (
             data_size_handling_for_gzip_compressed_body_with_no_extra_bytes,
@@ -218,14 +242,18 @@ format=field:{{10}}UINT8
             gzip_compressed_body_data(),
             -1,
             "compress_type=gzip\n",
-            Err(crate::Error::General)
+            Err(crate::Error::from_str(
+                "reading gzip-compressed body failed: unexpected end of file"
+            ))
         ),
         (
             data_size_handling_for_gzip_compressed_body_with_positive_extra_bytes,
             gzip_compressed_body_data(),
             1,
             "compress_type=gzip\n",
-            Err(crate::Error::General)
+            Err(crate::Error::from_str(
+                "unexpected EOF in reading body: 29 bytes read; 30 bytes expected"
+            ))
         ),
         (
             data_size_handling_for_bzip2_compressed_body_with_no_extra_bytes,
@@ -239,14 +267,41 @@ format=field:{{10}}UINT8
             bzip2_compressed_body_data(),
             -1,
             "compress_type=bzip2\n",
-            Err(crate::Error::General)
+            Err(crate::Error::from_str(
+                "reading bzip2-compressed body failed: decompression not finished but EOF reached"
+            ))
         ),
         (
             data_size_handling_for_bzip2_compressed_body_with_positive_extra_bytes,
             bzip2_compressed_body_data(),
             1,
             "compress_type=bzip2\n",
-            Err(crate::Error::General)
+            Err(crate::Error::from_str(
+                "unexpected EOF in reading body: 40 bytes read; 41 bytes expected"
+            ))
+        ),
+        (
+            data_size_handling_for_gzip_decoding_of_bzip2_compressed_data,
+            bzip2_compressed_body_data(),
+            0,
+            "compress_type=gzip\n",
+            Err(crate::Error::from_str("reading gzip-compressed body failed: invalid gzip header"))
+        ),
+        (
+            data_size_handling_for_bzip2_decoding_of_gzip_compressed_data,
+            gzip_compressed_body_data(),
+            0,
+            "compress_type=bzip2\n",
+            Err(crate::Error::from_str(
+                "reading bzip2-compressed body failed: bzip2: bz2 header missing"
+            ))
+        ),
+        (
+            data_size_handling_for_unknown_compress_type,
+            uncompressed_body_data(),
+            0,
+            "compress_type=xz\n",
+            Err(crate::Error::from_str("unknown \"compress_type\" field value: xz"))
         ),
     }
 }

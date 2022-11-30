@@ -6,6 +6,8 @@ mod value;
 mod visitor;
 mod walker;
 
+use std::borrow::Cow;
+
 pub use crate::{
     ast::{Ast, AstKind, Len, Location, Schema, SchemaParseError, SchemaParseErrorKind},
     reader::DataReader,
@@ -49,6 +51,7 @@ where
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Error {
     General,
+    Unhandled(Cow<'static, str>),
     Schema(SchemaParseError, Vec<u8>),
 }
 
@@ -56,6 +59,7 @@ impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Self::General => write!(f, "error in processing data"),
+            Self::Unhandled(s) => write!(f, "error in processing data: {s}"),
             Self::Schema(e, _b) => e.fmt(f),
         }
     }
@@ -76,6 +80,16 @@ impl From<std::fmt::Error> for Error {
 impl From<std::io::Error> for Error {
     fn from(_: std::io::Error) -> Self {
         Self::General
+    }
+}
+
+impl Error {
+    pub(crate) fn from_string(s: String) -> Self {
+        Self::Unhandled(Cow::Owned(s))
+    }
+
+    pub(crate) fn from_str(s: &'static str) -> Self {
+        Self::Unhandled(Cow::Borrowed(s))
     }
 }
 
