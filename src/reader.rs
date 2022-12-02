@@ -32,21 +32,21 @@ where
         self.find_magic()?;
         let map = self.read_header_fields()?;
 
-        let schema = map.get("format".as_bytes()).ok_or(Error::General)?;
+        let schema = map.get_required_field("format")?;
         let schema: Schema = schema.as_slice().try_into()?;
 
         let body = if with_body {
-            let body_size = map.get("data_size".as_bytes()).ok_or(Error::General)?;
+            let body_size = map.get_required_field("data_size")?;
             let body_size = String::from_utf8_lossy(body_size)
                 .parse::<usize>()
                 .or_else(|_| Err(Error::General))?;
-            let compress_type = map.get("compress_type".as_bytes());
+            let compress_type = map.get_field("compress_type");
             self.read_body(body_size, &compress_type)?
         } else {
             Vec::new()
         };
 
-        Ok((schema, map, body))
+        Ok((schema, map.inner(), body))
     }
 
     fn find_magic(&mut self) -> Result<usize, Error> {
@@ -65,7 +65,7 @@ where
         }
     }
 
-    fn read_header_fields(&mut self) -> Result<HashMap<Vec<u8>, Vec<u8>>, Error> {
+    fn read_header_fields(&mut self) -> Result<FieldMap, Error> {
         let mut sep_buf = vec![0; Self::SEP_MAGIC_LEN];
         let mut map = HashMap::new();
 
@@ -101,7 +101,7 @@ where
             }
         }
 
-        Ok(map)
+        Ok(FieldMap(map))
     }
 
     fn read_body(
@@ -150,6 +150,23 @@ where
             }
         };
         Ok(buf)
+    }
+}
+
+struct FieldMap(HashMap<Vec<u8>, Vec<u8>>);
+
+impl FieldMap {
+    fn inner(self) -> HashMap<Vec<u8>, Vec<u8>> {
+        let Self(inner) = self;
+        inner
+    }
+    fn get_field(&self, name: &str) -> Option<&Vec<u8>> {
+        let Self(inner) = self;
+        inner.get(name.as_bytes())
+    }
+
+    fn get_required_field(&self, name: &str) -> Result<&Vec<u8>, Error> {
+        self.get_field(name).ok_or(Error::General)
     }
 }
 
