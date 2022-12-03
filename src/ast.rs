@@ -223,11 +223,11 @@ impl<'b> SchemaParser<'b> {
         self.consume_symbol(TokenKind::RBrace)?;
         let child_kind = self.parse_type()?;
 
-        let struct_node = Ast {
+        let child_node = Ast {
             kind: child_kind,
             name: "[]".to_owned(),
         };
-        Ok(AstKind::Array(len, Box::new(struct_node)))
+        Ok(AstKind::Array(len, Box::new(child_node)))
     }
 
     fn consume_number(&mut self) -> Result<usize, SchemaParseError> {
