@@ -130,6 +130,7 @@ impl<'a, 'f> SchemaTreeFormatter<'a, 'f> {
                 match len {
                     Len::Fixed(n) => write!(self.f, "fixed ({n})"),
                     Len::Variable(s) => write!(self.f, "variable ({s})"),
+                    Len::Unlimited => write!(self.f, "unlimited"),
                 }?;
                 write!(self.f, ")")
             }
@@ -229,6 +230,24 @@ mod tests {
 │       └── ssfld3: INT32
 ├── fld2: INT8
 └── fld3: Array (length: variable (fld1))
+    └── [index]: Struct
+        ├── sfld1: <4>NSTR
+        ├── sfld2: STR
+        └── sfld3: INT32
+"
+        ),
+        (
+            schema_tree_display_for_data_with_unlimited_length_struct_array,
+            "fld1:[sfld1:[ssfld1:<4>NSTR,ssfld2:STR,ssfld3:INT32]],\
+            fld2:INT8,fld3:+[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32]",
+            "/: Struct
+├── fld1: Struct
+│   └── sfld1: Struct
+│       ├── ssfld1: <4>NSTR
+│       ├── ssfld2: STR
+│       └── ssfld3: INT32
+├── fld2: INT8
+└── fld3: Array (length: unlimited)
     └── [index]: Struct
         ├── sfld1: <4>NSTR
         ├── sfld2: STR

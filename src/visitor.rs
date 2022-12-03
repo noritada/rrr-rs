@@ -87,10 +87,10 @@ impl<'a, 'f> AstVisitor for SchemaOnelineFormatter<'a, 'f> {
         {
             self.write_name(name)?;
             match len {
-                Len::Fixed(n) => write!(self.f, "{{{n}"),
-                Len::Variable(s) => write!(self.f, "{{{s}"),
+                Len::Fixed(n) => write!(self.f, "{{{n}}}"),
+                Len::Variable(s) => write!(self.f, "{{{s}}}"),
+                Len::Unlimited => write!(self.f, "+"),
             }?;
-            write!(self.f, "}}")?;
             self.visit(child)
         } else {
             unreachable!()
@@ -208,6 +208,7 @@ impl<'a, 'f, 'b> AstVisitor for JsonSerializer<'a, 'f, 'b> {
             let len = match *len {
                 Len::Fixed(ref n) => n,
                 Len::Variable(ref s) => self.params.get_value(s).ok_or(Error::General)?,
+                Len::Unlimited => unimplemented!(),
             };
             let mut iter = (0..*len).peekable();
             while let Some(_) = iter.next() {
@@ -270,7 +271,8 @@ mod tests {
         (
             schema_oneline_display_for_data_with_variable_length_struct_array,
             "fld1:[sfld1:[ssfld1:<4>NSTR,ssfld2:STR,ssfld3:INT32]],\
-            fld2:INT8,fld3:{fld1}[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32]"
+            fld2:INT8,fld3:{fld1}[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32],\
+            fld3:+INT8"
         ),
     }
 

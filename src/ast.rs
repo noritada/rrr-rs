@@ -71,6 +71,7 @@ pub enum AstKind {
 pub enum Len {
     Fixed(usize),
     Variable(String),
+    Unlimited,
 }
 
 pub(crate) enum Size {
@@ -167,6 +168,7 @@ impl<'b> SchemaParser<'b> {
             }
             TokenKind::LAngleBracket => self.parse_nstr_type(),
             TokenKind::LBrace => self.parse_array(),
+            TokenKind::Plus => self.parse_unlimited_length_array(),
             _ => Err(self.err_unexpected_token()),
         }
     }
@@ -221,6 +223,16 @@ impl<'b> SchemaParser<'b> {
         };
 
         self.consume_symbol(TokenKind::RBrace)?;
+        self.parse_child_and_construct_array(len)
+    }
+
+    #[inline]
+    fn parse_unlimited_length_array(&mut self) -> Result<AstKind, SchemaParseError> {
+        // Plus has already been read
+        self.parse_child_and_construct_array(Len::Unlimited)
+    }
+
+    fn parse_child_and_construct_array(&mut self, len: Len) -> Result<AstKind, SchemaParseError> {
         let child_kind = self.parse_type()?;
 
         let child_node = Ast {
@@ -340,6 +352,7 @@ impl<'b> Iterator for SchemaLexer<'b> {
             b'>' => lex!(TokenKind::RAngleBracket),
             b'{' => lex!(TokenKind::LBrace),
             b'}' => lex!(TokenKind::RBrace),
+            b'+' => lex!(TokenKind::Plus),
             _ => Err(SchemaParseError {
                 kind: SchemaParseErrorKind::UnknownToken,
                 location: Location(self.pos, self.pos + 1),
@@ -377,6 +390,7 @@ enum TokenKind {
     RAngleBracket,
     LBrace,
     RBrace,
+    Plus,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -644,6 +658,45 @@ mod tests {
         assert_eq!(actual, expected);
     }
 
+    #[test]
+    fn parse_single_unlimited_length_struct_array() {
+        let input = "fld1:+[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32]";
+        let parser = SchemaParser::new(input.as_bytes());
+        let actual = parser.parse();
+        let expected_ast = Ast {
+            name: "".to_owned(),
+            kind: AstKind::Struct(vec![Ast {
+                name: "fld1".to_owned(),
+                kind: AstKind::Array(
+                    Len::Unlimited,
+                    Box::new(Ast {
+                        name: "[]".to_owned(),
+                        kind: AstKind::Struct(vec![
+                            Ast {
+                                name: "sfld1".to_owned(),
+                                kind: AstKind::NStr(4),
+                            },
+                            Ast {
+                                name: "sfld2".to_owned(),
+                                kind: AstKind::Str,
+                            },
+                            Ast {
+                                name: "sfld3".to_owned(),
+                                kind: AstKind::Int32,
+                            },
+                        ]),
+                    }),
+                ),
+            }]),
+        };
+        let expected = Ok(Schema {
+            ast: expected_ast,
+            params: ParamStack::new(),
+        });
+
+        assert_eq!(actual, expected);
+    }
+
     macro_rules! test_parse_errors {
         ($(($name:ident, $input:expr, $kind:ident, $start:expr, $end:expr),)*) => ($(
             #[test]
@@ -679,7 +732,8 @@ mod tests {
 
     #[test]
     fn lex() {
-        let input = "fld1:INT16,fld2:[sfld1:INT16,sfld2:INT8],fld3:{3}[sfld1:INT16,sfld2:INT8]";
+        let input =
+            "fld1:INT16,fld2:[sfld1:INT16,sfld2:INT8],fld3:{3}[sfld1:INT16,sfld2:INT8],fld4:+INT8";
         let lexer = SchemaLexer::new(input.as_bytes());
         let actual = lexer.collect::<Vec<_>>();
         let expected = vec![
@@ -713,6 +767,11 @@ mod tests {
             (TokenKind::Colon, 68),
             (TokenKind::Ident("INT8".to_owned()), 72),
             (TokenKind::RBracket, 73),
+            (TokenKind::Comma, 74),
+            (TokenKind::Ident("fld4".to_owned()), 78),
+            (TokenKind::Colon, 79),
+            (TokenKind::Plus, 80),
+            (TokenKind::Ident("INT8".to_owned()), 84),
         ];
         let expected = expected
             .iter()
