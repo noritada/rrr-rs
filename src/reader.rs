@@ -39,7 +39,7 @@ where
             let body_size = map.get_required_field("data_size")?;
             let body_size = String::from_utf8_lossy(body_size)
                 .parse::<usize>()
-                .or_else(|_| Err(Error::General))?;
+                .or_else(|_| Err(Error::from_str(r#""data_size" value is not an integer"#)))?;
             let compress_type = map.get_field("compress_type");
             self.read_body(body_size, &compress_type)?
         } else {
@@ -54,7 +54,7 @@ where
         loop {
             let len = self.inner.read_until(b'\n', &mut buf)?;
             if len == 0 {
-                return Err(Error::General); // magic not found
+                return Err(Error::from_str(r#"magic "WN\n" not found"#));
             }
             let buf_len = buf.len();
             if buf_len >= Self::START_MAGIC_LEN
@@ -70,7 +70,9 @@ where
         let mut map = HashMap::new();
 
         loop {
-            self.inner.read_exact(&mut sep_buf)?;
+            self.inner
+                .read_exact(&mut sep_buf)
+                .map_err(|_| Error::from_str("unexpected EOF in reading the header"))?;
             if sep_buf == Self::SEP_MAGIC {
                 break;
             }
@@ -81,7 +83,7 @@ where
             loop {
                 let len = self.inner.read_until(b'\n', &mut buf)?;
                 if len == 0 {
-                    return Err(Error::General); // EOF in reading the header
+                    return Err(Error::from_str("unexpected EOF in reading the header"));
                 }
                 let buf_len = buf.len();
                 if buf_len < 2 || buf[buf_len - 2] != b'\\' {
@@ -97,7 +99,9 @@ where
                 buf.pop(); // remove b'='
                 map.insert(buf, val);
             } else {
-                return Err(Error::General);
+                return Err(Error::from_str(
+                    "invalid line without an equal character found in the header",
+                ));
             }
         }
 
@@ -166,7 +170,8 @@ impl FieldMap {
     }
 
     fn get_required_field(&self, name: &str) -> Result<&Vec<u8>, Error> {
-        self.get_field(name).ok_or(Error::General)
+        self.get_field(name)
+            .ok_or(Error::from_string(format!("\"{name}\" field not found")))
     }
 }
 
@@ -175,6 +180,108 @@ mod tests {
     use std::io::Cursor;
 
     use super::*;
+
+    macro_rules! test_read_errors {
+        ($((
+            $name:ident,
+            $header:expr,
+            $expected:expr
+        ),)*) => ($(
+            #[test]
+            fn $name() {
+                let mut reader = DataReader::new(Cursor::new($header));
+                let actual = reader.read(true).map(|(_, _, _)| ());
+                assert_eq!(actual, $expected);
+            }
+        )*);
+    }
+
+    test_read_errors! {
+        (read_error_for_empty_data, b"", Err(Error::from_str(r#"magic "WN\n" not found"#))),
+        (read_error_for_too_short_data, b"WN", Err(Error::from_str(r#"magic "WN\n" not found"#))),
+        (
+            read_error_for_data_without_magic,
+            b"abcde",
+            Err(Error::from_str(r#"magic "WN\n" not found"#))
+        ),
+        (
+            read_error_for_data_with_eof_before_newline,
+            b"WN
+data_size=0
+format=field:UINT8",
+            Err(Error::from_str("unexpected EOF in reading the header"))
+        ),
+        (
+            read_error_for_data_with_eof_before_newline_with_escaped_newlines,
+            b"WN
+data_size=0
+f\\\normat\\\n=\\\nfield:\\\nUINT8\\\n",
+            Err(Error::from_str("unexpected EOF in reading the header"))
+        ),
+        (
+            read_error_for_data_with_eof_before_separator_magic,
+            b"WN
+data_size=0
+format=field:UINT8
+",
+            Err(Error::from_str("unexpected EOF in reading the header"))
+        ),
+        (
+            read_error_for_data_with_eof_before_separator_magic_with_escaped_newlines,
+            b"WN
+data_size=0
+f\\\normat\\\n=\\\nfield:\\\nUINT8\\\n
+",
+            Err(Error::from_str("unexpected EOF in reading the header"))
+        ),
+        (
+            no_read_error_for_minimal_data,
+            b"WN
+data_size=0
+format=field:UINT8
+\x04\x1a",
+            Ok(())
+        ),
+        (
+            no_read_error_for_data_with_escaped_newlines,
+            b"WN
+data_size=0
+f\\\normat\\\n=\\\nfield:\\\nUINT8\\\n
+\x04\x1a",
+            Ok(())
+        ),
+        (
+            read_error_for_data_with_invalid_line,
+            b"WN
+data_size=0
+format=field1:UINT8
+field2:UINT8
+\x04\x1a",
+            Err(Error::from_str("invalid line without an equal character found in the header"))
+        ),
+        (
+            read_errors_for_data_without_schema,
+            b"WN
+data_size=0
+\x04\x1a",
+            Err(Error::from_str(r#""format" field not found"#))
+        ),
+        (
+            read_errors_for_data_without_body_size,
+            b"WN
+format=field:UINT8
+\x04\x1a",
+            Err(Error::from_str(r#""data_size" field not found"#))
+        ),
+        (
+            read_errors_for_data_with_wrong_body_size,
+            b"WN
+data_size=0byte
+format=field:UINT8
+\x04\x1a",
+            Err(Error::from_str(r#""data_size" value is not an integer"#))
+        ),
+    }
 
     fn uncompressed_body_data() -> Vec<u8> {
         b"\x00\x01\x02\x03".to_vec()
