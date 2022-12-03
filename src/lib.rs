@@ -78,8 +78,8 @@ impl From<std::fmt::Error> for Error {
 }
 
 impl From<std::io::Error> for Error {
-    fn from(_: std::io::Error) -> Self {
-        Self::General
+    fn from(e: std::io::Error) -> Self {
+        Self::Unhandled(Cow::from(e.to_string()))
     }
 }
 
