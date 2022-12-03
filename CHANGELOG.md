@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2022-12-03
+
+### Changed
+
+- Library `rrr`
+  - To help users understand the causes of errors, all read errors now contain messages concerning their reasons.
+
 ## [0.5.0] - 2022-12-01
 
 ### Added
@@ -82,7 +89,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - dump: dump the data in the specified file
     - schema: display the schema of the data in the specified file
 
-[unreleased]: https://github.com/noritada/rrr-rs/compare/v0.5.0...HEAD
+[unreleased]: https://github.com/noritada/rrr-rs/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/noritada/rrr-rs/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/noritada/rrr-rs/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/noritada/rrr-rs/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/noritada/rrr-rs/compare/v0.3.1...v0.3.2
