@@ -171,7 +171,7 @@ impl FieldMap {
 
     fn get_required_field(&self, name: &str) -> Result<&Vec<u8>, Error> {
         self.get_field(name)
-            .ok_or(Error::from_string(format!("\"{name}\" field not found")))
+            .ok_or_else(|| Error::from_string(format!("\"{name}\" field not found")))
     }
 }
 

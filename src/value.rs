@@ -122,7 +122,7 @@ impl ValueTree {
         Ok(())
     }
 
-    pub(crate) fn get<'s>(&'s mut self) -> Result<&'s Value, Error> {
+    pub(crate) fn get(&mut self) -> Result<&Value, Error> {
         if !self.completed {
             return Err(Error::General); // TODO: make more descriptive
         }

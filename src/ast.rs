@@ -260,7 +260,7 @@ impl<'b> SchemaParser<'b> {
         let token = self
             .lexer
             .next()
-            .unwrap_or(Err(self.err_unexpected_eof()))?;
+            .unwrap_or_else(|| Err(self.err_unexpected_eof()))?;
         self.update_location(&token);
         Ok(token)
     }
