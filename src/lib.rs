@@ -36,6 +36,7 @@ where
         } => {
             let len = match len {
                 Len::Fixed(n) => n,
+                Len::Unlimited => panic!("error: unlimited length array is not supported"),
                 Len::Variable(_) => panic!("error: variable length array is not supported"),
             };
             for _ in 0..(*len) {

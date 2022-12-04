@@ -88,6 +88,10 @@ impl<'w> BufWalker<'w> {
         }
         Err(Error::General)
     }
+
+    pub(crate) fn reached_end(&self) -> bool {
+        self.pos == self.buf.len()
+    }
 }
 
 #[cfg(test)]

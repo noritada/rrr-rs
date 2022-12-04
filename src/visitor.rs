@@ -87,10 +87,10 @@ impl<'a, 'f> AstVisitor for SchemaOnelineFormatter<'a, 'f> {
         {
             self.write_name(name)?;
             match len {
-                Len::Fixed(n) => write!(self.f, "{{{n}"),
-                Len::Variable(s) => write!(self.f, "{{{s}"),
+                Len::Fixed(n) => write!(self.f, "{{{n}}}"),
+                Len::Variable(s) => write!(self.f, "{{{s}}}"),
+                Len::Unlimited => write!(self.f, "+"),
             }?;
-            write!(self.f, "}}")?;
             self.visit(child)
         } else {
             unreachable!()
@@ -205,15 +205,29 @@ impl<'a, 'f, 'b> AstVisitor for JsonSerializer<'a, 'f, 'b> {
         {
             write!(self.f, "[")?;
 
-            let len = match *len {
-                Len::Fixed(ref n) => n,
-                Len::Variable(ref s) => self.params.get_value(s).ok_or(Error::General)?,
-            };
-            let mut iter = (0..*len).peekable();
-            while let Some(_) = iter.next() {
-                self.visit(child)?;
-                if iter.peek().is_some() {
-                    write!(self.f, ",")?;
+            // should be simplified and reusable
+            if matches!(*len, Len::Unlimited) {
+                let mut is_first = true;
+                while !self.walker.reached_end() {
+                    if is_first {
+                        is_first = false;
+                    } else {
+                        write!(self.f, ",")?;
+                    }
+                    self.visit(child)?;
+                }
+            } else {
+                let len = match *len {
+                    Len::Fixed(ref n) => n,
+                    Len::Variable(ref s) => self.params.get_value(s).ok_or(Error::General)?,
+                    Len::Unlimited => unreachable!(),
+                };
+                let mut iter = (0..*len).peekable();
+                while let Some(_) = iter.next() {
+                    self.visit(child)?;
+                    if iter.peek().is_some() {
+                        write!(self.f, ",")?;
+                    }
                 }
             }
 
@@ -270,7 +284,8 @@ mod tests {
         (
             schema_oneline_display_for_data_with_variable_length_struct_array,
             "fld1:[sfld1:[ssfld1:<4>NSTR,ssfld2:STR,ssfld3:INT32]],\
-            fld2:INT8,fld3:{fld1}[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32]"
+            fld2:INT8,fld3:{fld1}[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32],\
+            fld3:+INT8"
         ),
     }
 
@@ -393,6 +408,42 @@ mod tests {
                                 }
                             ]
                         }}
+                    ]
+                }
+            "#
+        ),
+        (
+            json_serialization_for_data_with_unlimited_length_builtin_type_array,
+            "fld1:+UINT8",
+            vec![0x01, 0x02, 0x03],
+            r#"
+                {
+                    "fld1": [1, 2, 3]
+                }
+            "#
+        ),
+        (
+            json_serialization_for_data_with_unlimited_length_struct_array,
+            "fld1:+[sfld1:UINT8,sfld2:UINT8,sfld3:UINT8]",
+            vec![0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09],
+            r#"
+                {
+                    "fld1": [
+                        {
+                            "sfld1": 1,
+                            "sfld2": 2,
+                            "sfld3": 3
+                        },
+                        {
+                            "sfld1": 4,
+                            "sfld2": 5,
+                            "sfld3": 6
+                        },
+                        {
+                            "sfld1": 7,
+                            "sfld2": 8,
+                            "sfld3": 9
+                        }
                     ]
                 }
             "#
