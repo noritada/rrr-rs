@@ -39,7 +39,7 @@ where
             let body_size = map.get_required_field("data_size")?;
             let body_size = String::from_utf8_lossy(body_size)
                 .parse::<usize>()
-                .or_else(|_| Err(Error::from_str(r#""data_size" value is not an integer"#)))?;
+                .map_err(|_| Error::from_str(r#""data_size" value is not an integer"#))?;
             let compress_type = map.get_field("compress_type");
             self.read_body(body_size, &compress_type)?
         } else {
