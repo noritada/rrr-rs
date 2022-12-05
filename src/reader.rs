@@ -28,7 +28,7 @@ where
         &mut self,
         with_body: bool,
     ) -> Result<(Schema, HashMap<Vec<u8>, Vec<u8>>, Vec<u8>), Error> {
-        self.inner.seek(SeekFrom::Start(0))?;
+        self.inner.rewind()?;
         self.find_magic()?;
         let map = self.read_header_fields()?;
 

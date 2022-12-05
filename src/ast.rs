@@ -316,7 +316,7 @@ impl<'b> SchemaLexer<'b> {
 
     fn lex_number(&mut self) -> Token {
         let start = self.pos;
-        while self.pos < self.input.len() && matches!(self.input[self.pos], b'0'..=b'9') {
+        while self.pos < self.input.len() && self.input[self.pos].is_ascii_digit() {
             self.pos += 1;
         }
         let kind = TokenKind::Number(
