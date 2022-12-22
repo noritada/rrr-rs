@@ -1,5 +1,8 @@
 use anyhow::anyhow;
-use aws_sdk_s3::types::SdkError;
+use aws_sdk_s3::{
+    error::{GetObjectError, GetObjectErrorKind},
+    types::SdkError,
+};
 use console::Style;
 use rrr::{SchemaParseError, SchemaParseErrorKind};
 
@@ -68,15 +71,28 @@ impl<'e, 'i> std::fmt::Display for SchemaParseErrorReport<'e, 'i> {
     }
 }
 
-pub(crate) fn create_s3_download_error_report(
-    err: SdkError<aws_sdk_s3::error::GetObjectError>,
-) -> anyhow::Error {
-    let reason = match &err {
-        SdkError::ConstructionFailure(_) => "failed to construct a request before sending",
-        SdkError::TimeoutError(_) => "request to S3 timed out",
-        SdkError::DispatchFailure(_) => "request to S3 failed during dispatch",
-        SdkError::ResponseError { .. } => "received error response",
-        SdkError::ServiceError { .. } => "error returned from S3",
+pub(crate) fn create_s3_download_error_report(err: SdkError<GetObjectError>) -> anyhow::Error {
+    let body = format!("{err}");
+    let reason = match err {
+        SdkError::ConstructionFailure(_) => {
+            "failed to construct a request before sending".to_owned()
+        }
+        SdkError::TimeoutError(_) => "request to S3 timed out".to_owned(),
+        SdkError::DispatchFailure(_) => "request to S3 failed during dispatch".to_owned(),
+        e => match e.into_service_error() {
+            GetObjectError {
+                kind: GetObjectErrorKind::InvalidObjectState(value),
+                ..
+            } => format!("invalid object state: {value}"),
+            GetObjectError {
+                kind: GetObjectErrorKind::NoSuchKey(_),
+                ..
+            } => "object does not exist".to_owned(),
+            err @ GetObjectError { .. } if err.code() == Some("SomeUnmodeledError") => {
+                "some unhandled error".to_owned()
+            }
+            _ => "error returned from S3".to_owned(),
+        },
     };
     let yellow_bold = Style::new().yellow().bold();
     let bold = Style::new().bold();
@@ -89,7 +105,7 @@ pub(crate) fn create_s3_download_error_report(
         yellow_bold.apply_to("reason"),
         bold.apply_to(":"),
         bold.apply_to(reason),
-        err,
+        body,
     );
     anyhow!("failed to download an S3 object:\n\n{}", message)
 }
