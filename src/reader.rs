@@ -2,8 +2,11 @@ use crate::ast::Schema;
 use crate::Error;
 use bzip2::read::BzDecoder;
 use flate2::read::GzDecoder;
+pub use options::DataReaderOptions;
 use std::collections::HashMap;
 use std::io::{BufRead, Read, Seek, SeekFrom};
+
+mod options;
 
 pub struct DataReader<R> {
     inner: R,
@@ -26,7 +29,7 @@ where
 {
     pub fn read(
         &mut self,
-        with_body: bool,
+        options: DataReaderOptions,
     ) -> Result<(Schema, HashMap<Vec<u8>, Vec<u8>>, Vec<u8>), Error> {
         self.inner.rewind()?;
         self.find_magic()?;
@@ -35,7 +38,7 @@ where
         let schema = map.get_required_field("format")?;
         let schema: Schema = schema.as_slice().try_into()?;
 
-        let body = if with_body {
+        let body = if options.contains(DataReaderOptions::ENABLE_READING_BODY) {
             let body_size = map.get_required_field("data_size")?;
             let body_size = String::from_utf8_lossy(body_size)
                 .parse::<usize>()
@@ -190,7 +193,8 @@ mod tests {
             #[test]
             fn $name() {
                 let mut reader = DataReader::new(Cursor::new($header));
-                let actual = reader.read(true).map(|(_, _, _)| ());
+                let options = DataReaderOptions::ENABLE_READING_BODY;
+                let actual = reader.read(options).map(|(_, _, _)| ());
                 assert_eq!(actual, $expected);
             }
         )*);
@@ -324,7 +328,8 @@ format=field:{{10}}UINT8
                 let bytes = [header.as_bytes(), &body].concat();
 
                 let mut reader = DataReader::new(Cursor::new(&bytes));
-                let actual_body = reader.read(true).map(|(_, _, body_returned)| body_returned);
+                let options = DataReaderOptions::ENABLE_READING_BODY;
+                let actual_body = reader.read(options).map(|(_, _, body_returned)| body_returned);
                 assert_eq!(actual_body, $expected);
             }
         )*);

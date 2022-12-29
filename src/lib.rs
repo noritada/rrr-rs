@@ -10,7 +10,7 @@ use std::borrow::Cow;
 
 pub use crate::{
     ast::{Ast, AstKind, Len, Location, Schema, SchemaParseError, SchemaParseErrorKind},
-    reader::DataReader,
+    reader::{DataReader, DataReaderOptions},
     utils::json_escape_str,
     visitor::{AstVisitor, JsonDisplay, SchemaOnelineDisplay},
 };

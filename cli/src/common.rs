@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use rrr::{DataReader, Schema};
+use rrr::{DataReader, DataReaderOptions, Schema};
 use std::collections::HashMap;
 use std::io::{BufRead, Seek};
 
@@ -76,8 +76,13 @@ fn read_from_reader<R>(
 where
     R: BufRead + Seek,
 {
+    let options = if with_body {
+        DataReaderOptions::ENABLE_READING_BODY
+    } else {
+        DataReaderOptions::default()
+    };
     let mut f = DataReader::new(reader);
-    f.read(with_body)
+    f.read(options)
         .map_err(crate::diagnostics::create_error_report)
 }
 
