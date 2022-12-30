@@ -1,16 +1,22 @@
+/// [`DataReaderOptions`] is a type representing the various flags of
+/// [`DataReader`](super::DataReader) and options as the union of those flags.
 #[derive(Debug, PartialEq, Eq, Default)]
 pub struct DataReaderOptions(u32);
 
 impl DataReaderOptions {
+    /// Flag to enable data body reading.
     pub const ENABLE_READING_BODY: Self = Self(1 << 1);
+    /// Flag to ignore the value of `data_size` header field.
     pub const IGNORE_DATA_SIZE_FIELD: Self = Self(1 << 2);
 
+    /// Returns the union of `self` and a `flag`.
     pub fn union(&self, flag: Self) -> Self {
         let Self(self_) = self;
         let Self(flag) = flag;
         Self(*self_ | flag)
     }
 
+    /// Returns whether a particular `flag` is set or not.
     pub fn contains(&self, flag: Self) -> bool {
         let Self(self_) = self;
         let Self(flag) = flag;
