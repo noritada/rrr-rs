@@ -3,6 +3,7 @@ pub struct DataReaderOptions(u32);
 
 impl DataReaderOptions {
     pub const ENABLE_READING_BODY: Self = Self(1 << 1);
+    pub const IGNORE_DATA_SIZE_FIELD: Self = Self(1 << 2);
 
     pub fn union(&self, flag: Self) -> Self {
         let Self(self_) = self;

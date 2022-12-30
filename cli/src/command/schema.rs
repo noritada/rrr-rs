@@ -5,7 +5,7 @@ use crate::{
 use anyhow::Result;
 use clap::{arg, ArgAction, ArgMatches, Command};
 use console::Term;
-use rrr::SchemaOnelineDisplay;
+use rrr::{DataReaderOptions, SchemaOnelineDisplay};
 
 pub(crate) fn cli() -> Command {
     Command::new("schema")
@@ -22,7 +22,8 @@ pub(crate) fn cli() -> Command {
 pub(crate) async fn exec(args: &ArgMatches) -> Result<()> {
     let fname = args.get_one::<String>("PATH_OR_URI").unwrap();
     let n_bytes = args.get_one::<usize>("N").unwrap();
-    let (schema, _, _) = read_from_source(fname, false, Some(n_bytes)).await?;
+    let options = DataReaderOptions::default();
+    let (schema, _, _) = read_from_source(fname, Some(n_bytes), options).await?;
 
     if args.get_flag("tree") {
         let user_attended = console::user_attended();
