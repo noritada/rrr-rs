@@ -1,7 +1,7 @@
 use crate::common::read_from_source;
 use anyhow::Result;
 use clap::{arg, ArgMatches, Command};
-use rrr::JsonDisplay;
+use rrr::{DataReaderOptions, JsonDisplay};
 
 pub(crate) fn cli() -> Command {
     Command::new("dump")
@@ -11,7 +11,8 @@ pub(crate) fn cli() -> Command {
 
 pub(crate) async fn exec(args: &ArgMatches) -> Result<()> {
     let fname = args.get_one::<String>("PATH_OR_URI").unwrap();
-    let (schema, _, body_buf) = read_from_source(fname, true, None).await?;
+    let options = DataReaderOptions::ENABLE_READING_BODY;
+    let (schema, _, body_buf) = read_from_source(fname, None, options).await?;
 
     println!("{}", JsonDisplay::new(&schema, &body_buf));
 

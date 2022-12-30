@@ -1,7 +1,7 @@
 use crate::common::read_from_source;
 use anyhow::Result;
 use clap::{arg, ArgMatches, Command};
-use rrr::json_escape_str;
+use rrr::{json_escape_str, DataReaderOptions};
 use std::collections::HashMap;
 use std::fmt;
 
@@ -19,7 +19,8 @@ pub(crate) fn cli() -> Command {
 pub(crate) async fn exec(args: &ArgMatches) -> Result<()> {
     let fname = args.get_one::<String>("PATH_OR_URI").unwrap();
     let n_bytes = args.get_one::<usize>("N").unwrap();
-    let (_, header, _) = read_from_source(fname, false, Some(n_bytes)).await?;
+    let options = DataReaderOptions::default();
+    let (_, header, _) = read_from_source(fname, Some(n_bytes), options).await?;
 
     println!("{}", HeaderDisplay(&header));
 
