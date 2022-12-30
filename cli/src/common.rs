@@ -81,9 +81,8 @@ where
     } else {
         DataReaderOptions::default()
     };
-    let mut f = DataReader::new(reader);
-    f.read(options)
-        .map_err(crate::diagnostics::create_error_report)
+    let mut f = DataReader::new(reader, options);
+    f.read().map_err(crate::diagnostics::create_error_report)
 }
 
 #[cfg(unix)]

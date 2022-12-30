@@ -10,6 +10,7 @@ mod options;
 
 pub struct DataReader<R> {
     inner: R,
+    options: DataReaderOptions,
 }
 
 impl<R> DataReader<R> {
@@ -18,8 +19,8 @@ impl<R> DataReader<R> {
     const SEP_MAGIC: &'static [u8] = [0x04, 0x1a].as_slice();
     const SEP_MAGIC_LEN: usize = Self::SEP_MAGIC.len();
 
-    pub fn new(inner: R) -> Self {
-        Self { inner }
+    pub fn new(inner: R, options: DataReaderOptions) -> Self {
+        Self { inner, options }
     }
 }
 
@@ -27,10 +28,7 @@ impl<R> DataReader<R>
 where
     R: BufRead + Seek,
 {
-    pub fn read(
-        &mut self,
-        options: DataReaderOptions,
-    ) -> Result<(Schema, HashMap<Vec<u8>, Vec<u8>>, Vec<u8>), Error> {
+    pub fn read(&mut self) -> Result<(Schema, HashMap<Vec<u8>, Vec<u8>>, Vec<u8>), Error> {
         self.inner.rewind()?;
         self.find_magic()?;
         let map = self.read_header_fields()?;
@@ -38,7 +36,10 @@ where
         let schema = map.get_required_field("format")?;
         let schema: Schema = schema.as_slice().try_into()?;
 
-        let body = if options.contains(DataReaderOptions::ENABLE_READING_BODY) {
+        let body = if self
+            .options
+            .contains(DataReaderOptions::ENABLE_READING_BODY)
+        {
             let body_size = map.get_required_field("data_size")?;
             let body_size = String::from_utf8_lossy(body_size)
                 .parse::<usize>()
@@ -192,9 +193,9 @@ mod tests {
         ),)*) => ($(
             #[test]
             fn $name() {
-                let mut reader = DataReader::new(Cursor::new($header));
                 let options = DataReaderOptions::ENABLE_READING_BODY;
-                let actual = reader.read(options).map(|(_, _, _)| ());
+                let mut reader = DataReader::new(Cursor::new($header), options);
+                let actual = reader.read().map(|(_, _, _)| ());
                 assert_eq!(actual, $expected);
             }
         )*);
@@ -327,9 +328,9 @@ format=field:{{10}}UINT8
                 );
                 let bytes = [header.as_bytes(), &body].concat();
 
-                let mut reader = DataReader::new(Cursor::new(&bytes));
                 let options = DataReaderOptions::ENABLE_READING_BODY;
-                let actual_body = reader.read(options).map(|(_, _, body_returned)| body_returned);
+                let mut reader = DataReader::new(Cursor::new(&bytes), options);
+                let actual_body = reader.read().map(|(_, _, body_returned)| body_returned);
                 assert_eq!(actual_body, $expected);
             }
         )*);
