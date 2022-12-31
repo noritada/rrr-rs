@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2022-12-31
+
+### Added
+
+- Library `rrr`
+  - New `DataReaderOptions` type to represent the various flags of `DataReader` and options as the union of those flags.
+- CLI application `rrr`
+  - New `--ignore-size` option for the `dump` command to ignore the `data_size` field value in reading the body.
+
 ## [0.6.0] - 2022-12-04
 
 ### Added
@@ -97,7 +106,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - dump: dump the data in the specified file
     - schema: display the schema of the data in the specified file
 
-[unreleased]: https://github.com/noritada/rrr-rs/compare/v0.6.0...HEAD
+[unreleased]: https://github.com/noritada/rrr-rs/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/noritada/rrr-rs/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/noritada/rrr-rs/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/noritada/rrr-rs/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/noritada/rrr-rs/compare/v0.4.0...v0.5.0
