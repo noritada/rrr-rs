@@ -10,7 +10,7 @@ bzip2-rs = "0.1"
 flate2 = "1"
 
 [workspace]
-members = ["cli"]
+members = ["cli", "web"]
 
 [workspace.package]
 version = "0.8.0"
