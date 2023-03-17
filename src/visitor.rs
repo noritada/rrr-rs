@@ -1,10 +1,13 @@
-use crate::ast::{Ast, AstKind, Len, Schema};
-use crate::param::ParamStack;
-use crate::utils::json_escape_str;
-use crate::value::{Number, Value};
-use crate::walker::BufWalker;
-use crate::Error;
 use std::fmt;
+
+use crate::{
+    ast::{Ast, AstKind, Len, Schema},
+    param::ParamStack,
+    utils::json_escape_str,
+    value::{Number, Value},
+    walker::BufWalker,
+    Error,
+};
 
 pub trait AstVisitor {
     fn visit_struct(&mut self, node: &Ast) -> Result<(), Error>;
@@ -251,7 +254,8 @@ impl<'a, 'f, 'b> AstVisitor for JsonSerializer<'a, 'f, 'b> {
             if let Value::Number(ref n) = value {
                 self.params.push_value(name, (*n).clone().try_into()?);
             } else {
-                return Err(Error::General); // parameters should be positive numbers
+                return Err(Error::General); // parameters should be positive
+                                            // numbers
             }
         }
         Ok(())

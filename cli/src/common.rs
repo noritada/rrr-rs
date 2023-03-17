@@ -1,8 +1,10 @@
+use std::{
+    collections::HashMap,
+    io::{BufRead, Seek},
+};
+
 use anyhow::{anyhow, Result};
 use rrr::{DataReader, DataReaderOptions, Schema};
-use std::collections::HashMap;
-use std::io::{BufRead, Seek};
-
 #[cfg(unix)]
 use {pager::Pager, which::which};
 

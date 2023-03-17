@@ -1,10 +1,13 @@
-use crate::ast::Schema;
-use crate::Error;
+use std::{
+    collections::HashMap,
+    io::{BufRead, Read, Seek, SeekFrom},
+};
+
 use bzip2::read::BzDecoder;
 use flate2::read::GzDecoder;
 pub use options::DataReaderOptions;
-use std::collections::HashMap;
-use std::io::{BufRead, Read, Seek, SeekFrom};
+
+use crate::{ast::Schema, Error};
 
 mod options;
 
@@ -117,8 +120,8 @@ where
         body_size: usize,
         compress_type: &Option<&Vec<u8>>,
     ) -> Result<Vec<u8>, Error> {
-        // We want to report how many bytes are actually read when the buffer is not filled,
-        // although `read_exact` does not report it.
+        // We want to report how many bytes are actually read when the buffer is not
+        // filled, although `read_exact` does not report it.
         // So, we use `read_to_end` here, assuming that the data is correctly ended.
         let mut buf = Vec::with_capacity(body_size);
         self.inner

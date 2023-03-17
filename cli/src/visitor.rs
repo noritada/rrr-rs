@@ -1,6 +1,7 @@
+use std::fmt;
+
 use console::Style;
 use rrr::{Ast, AstKind, AstVisitor, Error, Len};
-use std::fmt;
 
 pub(crate) struct FieldCounter(usize);
 
@@ -191,8 +192,9 @@ fn prettify_special_field_name(name: &str) -> &str {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use rrr::Schema;
+
+    use super::*;
 
     macro_rules! test_schema_tree_display {
         ($(($name:ident, $input:expr, $expected:expr),)*) => ($(

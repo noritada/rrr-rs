@@ -96,12 +96,14 @@ impl Error {
 
 #[cfg(test)]
 mod tests {
+    use std::{cell::RefCell, rc::Rc};
+
     use super::*;
-    use crate::ast::{Schema, Size};
-    use crate::value::{Number, Value, ValueTree};
-    use crate::walker::BufWalker;
-    use std::cell::RefCell;
-    use std::rc::Rc;
+    use crate::{
+        ast::{Schema, Size},
+        value::{Number, Value, ValueTree},
+        walker::BufWalker,
+    };
 
     fn schema_without_str() -> Result<Schema, Error> {
         let ast = "date:[year:UINT16,month:UINT8,day:UINT8],\

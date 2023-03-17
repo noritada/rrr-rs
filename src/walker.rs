@@ -1,7 +1,9 @@
-use crate::ast::{Ast, AstKind, Size};
-use crate::utils::FromBytes;
-use crate::value::Value;
-use crate::Error;
+use crate::{
+    ast::{Ast, AstKind, Size},
+    utils::FromBytes,
+    value::Value,
+    Error,
+};
 
 pub struct BufWalker<'w> {
     buf: &'w [u8],

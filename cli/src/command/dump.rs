@@ -1,7 +1,8 @@
-use crate::common::read_from_source;
 use anyhow::Result;
 use clap::{arg, ArgAction, ArgMatches, Command};
 use rrr::{DataReaderOptions, JsonDisplay};
+
+use crate::common::read_from_source;
 
 pub(crate) fn cli() -> Command {
     Command::new("dump")

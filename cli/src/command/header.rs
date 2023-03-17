@@ -1,9 +1,10 @@
-use crate::common::read_from_source;
+use std::{collections::HashMap, fmt};
+
 use anyhow::Result;
 use clap::{arg, ArgMatches, Command};
 use rrr::{json_escape_str, DataReaderOptions};
-use std::collections::HashMap;
-use std::fmt;
+
+use crate::common::read_from_source;
 
 pub(crate) fn cli() -> Command {
     Command::new("header")

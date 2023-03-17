@@ -1,5 +1,6 @@
-use crate::param::ParamStack;
 use std::str::FromStr;
+
+use crate::param::ParamStack;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Schema {

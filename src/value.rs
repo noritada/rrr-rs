@@ -1,6 +1,6 @@
+use std::{cell::RefCell, rc::Rc};
+
 use crate::Error;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum Value {

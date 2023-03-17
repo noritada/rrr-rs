@@ -1,11 +1,12 @@
-use crate::{
-    common::read_from_source,
-    visitor::{FieldCounter, SchemaTreeDisplay},
-};
 use anyhow::Result;
 use clap::{arg, ArgAction, ArgMatches, Command};
 use console::Term;
 use rrr::{DataReaderOptions, SchemaOnelineDisplay};
+
+use crate::{
+    common::read_from_source,
+    visitor::{FieldCounter, SchemaTreeDisplay},
+};
 
 pub(crate) fn cli() -> Command {
     Command::new("schema")
