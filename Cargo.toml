@@ -6,7 +6,7 @@ edition.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bzip2 = "0.4"
+bzip2-rs = "0.1"
 flate2 = "1"
 
 [workspace]

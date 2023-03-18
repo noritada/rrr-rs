@@ -3,7 +3,6 @@ use std::{
     io::{BufRead, Read, Seek, SeekFrom},
 };
 
-use bzip2::read::BzDecoder;
 use flate2::read::GzDecoder;
 pub use options::DataReaderOptions;
 
@@ -151,7 +150,7 @@ where
                 decoded
             }
             Some(b"bzip2") => {
-                let mut reader = BzDecoder::new(&buf[..]);
+                let mut reader = bzip2_rs::DecoderReader::new(&buf[..]);
                 let mut decoded = Vec::new();
                 reader.read_to_end(&mut decoded).map_err(|e| {
                     Error::from_string(format!("reading bzip2-compressed body failed: {e}"))
@@ -452,7 +451,7 @@ format=field:{{10}}UINT8
             false,
             "compress_type=bzip2\n",
             Err(crate::Error::from_str(
-                "reading bzip2-compressed body failed: decompression not finished but EOF reached"
+                "reading bzip2-compressed body failed: whole stream crc truncated"
             ))
         ),
         (
@@ -496,7 +495,7 @@ format=field:{{10}}UINT8
             false,
             "compress_type=bzip2\n",
             Err(crate::Error::from_str(
-                "reading bzip2-compressed body failed: bzip2: bz2 header missing"
+                "reading bzip2-compressed body failed: invalid file signature"
             ))
         ),
         (
