@@ -6,5 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-web-sys = { version = "0.3", features = ["DataTransfer", "FileList", "DragEvent"] }
+gloo-file = { version = "0.2", features = ["futures"] }
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = ["Blob", "DataTransfer", "FileList", "DragEvent"] }
 yew = { version = "0.20", features = ["csr"] }
