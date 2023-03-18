@@ -32,7 +32,14 @@ fn app() -> Html {
                     wasm_bindgen_futures::spawn_local(async move {
                         let result = read_as_bytes(&blob).await;
                         if let Ok(bytes) = result {
-                            file_content.set(String::from_utf8((&bytes[0..20]).to_vec()).ok())
+                            let mut reader = rrr::DataReader::new(
+                                std::io::Cursor::new(&bytes),
+                                rrr::DataReaderOptions::ENABLE_READING_BODY,
+                            );
+                            let json = reader.read().map(|(schema, _, body_buf)| {
+                                rrr::JsonDisplay::new(&schema, &body_buf).to_string()
+                            });
+                            file_content.set(json.ok())
                         }
                     });
                 }
