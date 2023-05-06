@@ -1,3 +1,5 @@
+use wasm_bindgen::JsCast;
+use web_sys::Element;
 use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
@@ -10,12 +12,42 @@ pub(crate) fn file_drop_area(FileDropAreaProps { on_drop }: &FileDropAreaProps) 
     let on_drag_over = {
         Callback::from(move |e: DragEvent| {
             e.prevent_default();
+
+            if let Some(target) = e.target() {
+                let element = target.unchecked_into::<Element>();
+                element
+                    .class_list()
+                    .add_1("dragover")
+                    .expect("adding class 'dragover' failed")
+            }
+        })
+    };
+    let on_drag_leave = {
+        Callback::from(move |e: DragEvent| {
+            e.prevent_default();
+
+            if let Some(target) = e.target() {
+                let element = target.unchecked_into::<Element>();
+                element
+                    .class_list()
+                    .remove_1("dragover")
+                    .expect("removing class 'dragover' failed")
+            }
         })
     };
     let on_file_drop = {
         let on_drop = on_drop.clone();
         Callback::from(move |e: DragEvent| {
             e.prevent_default();
+
+            if let Some(target) = e.target() {
+                let element = target.unchecked_into::<Element>();
+                element
+                    .class_list()
+                    .remove_1("dragover")
+                    .expect("removing class 'dragover' failed")
+            }
+
             let item = e
                 .data_transfer()
                 .and_then(|transfer| transfer.files())
@@ -27,8 +59,8 @@ pub(crate) fn file_drop_area(FileDropAreaProps { on_drop }: &FileDropAreaProps) 
     };
 
     html! {
-        <div ondragover={on_drag_over} ondrop={on_file_drop}>
-            { "Please upload a file here" }
+        <div id={ "drop-zone" } ondragover={on_drag_over} ondragleave={on_drag_leave} ondrop={on_file_drop}>
+            { "Drag and drop file here" }
         </div>
     }
 }

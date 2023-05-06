@@ -56,6 +56,7 @@ fn app() -> Html {
 
     html! {
         <>
+            <h1>{ "Data Viewer" }</h1>
             <FileDropArea on_drop={on_file_drop} />
             <div>{ file_name }</div>
             <div>{ content }</div>
