@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2023-05-07
+
+### Added
+
+- Library `rrr`
+  - New `JsonFormattingStyle` type to represent JSON formatting style variants.
+- CLI application `rrr`
+  - New `--pretty` option for the `dump` command to pretty-print the JSON output.
+
+### Changed
+
+- Library `rrr`
+  - The library now depends on `bzip2-rs` crate instead of `bzip2` and can be easily built for WebAssembly.
+
 ## [0.7.0] - 2022-12-31
 
 ### Added
@@ -106,7 +120,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - dump: dump the data in the specified file
     - schema: display the schema of the data in the specified file
 
-[unreleased]: https://github.com/noritada/rrr-rs/compare/v0.7.0...HEAD
+[unreleased]: https://github.com/noritada/rrr-rs/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/noritada/rrr-rs/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/noritada/rrr-rs/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/noritada/rrr-rs/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/noritada/rrr-rs/compare/v0.5.0...v0.5.1
