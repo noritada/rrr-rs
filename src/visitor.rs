@@ -123,34 +123,53 @@ impl<'a, 'f> AstVisitor for SchemaOnelineFormatter<'a, 'f> {
 pub struct JsonDisplay<'s, 'b> {
     schema: &'s Schema,
     buf: &'b [u8],
+    rule: JsonDisplayRule,
 }
 
 impl<'s, 'b> JsonDisplay<'s, 'b> {
-    pub fn new(schema: &'s Schema, buf: &'b [u8]) -> Self {
-        Self { schema, buf }
+    pub fn new(schema: &'s Schema, buf: &'b [u8], rule: JsonDisplayRule) -> Self {
+        Self { schema, buf, rule }
     }
 }
 
 impl<'s, 'b> fmt::Display for JsonDisplay<'s, 'b> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut formatter = JsonSerializer::new(f, self.buf, self.schema.params.clone());
+        let mut formatter =
+            JsonSerializer::new(f, self.buf, self.schema.params.clone(), &self.rule);
         formatter.visit(&self.schema.ast).unwrap();
         Ok(())
     }
 }
 
-pub struct JsonSerializer<'a, 'f, 'b> {
+#[derive(PartialEq, Eq)]
+pub enum JsonDisplayRule {
+    Minimal,
+    Pretty,
+}
+
+pub struct JsonSerializer<'a, 'f, 'b, 'r> {
     f: &'f mut fmt::Formatter<'a>,
     walker: BufWalker<'b>,
     params: ParamStack,
+    rule: &'r JsonDisplayRule,
+    // Indent level for formatting. This differs from `ParamStack::level`, which is a scope level
+    // and does not increment for arrays.
+    level: IndentLevel,
 }
 
-impl<'a, 'f, 'b> JsonSerializer<'a, 'f, 'b> {
-    pub fn new(f: &'f mut fmt::Formatter<'a>, buf: &'b [u8], params: ParamStack) -> Self {
+impl<'a, 'f, 'b, 'r> JsonSerializer<'a, 'f, 'b, 'r> {
+    pub fn new(
+        f: &'f mut fmt::Formatter<'a>,
+        buf: &'b [u8],
+        params: ParamStack,
+        rule: &'r JsonDisplayRule,
+    ) -> Self {
         Self {
             f,
             walker: BufWalker::new(buf),
             params,
+            rule,
+            level: IndentLevel::new(),
         }
     }
 
@@ -171,9 +190,32 @@ impl<'a, 'f, 'b> JsonSerializer<'a, 'f, 'b> {
         write!(self.f, "\"{}\"", json_escape_str(s))?;
         Ok(())
     }
+
+    fn write_post_colon_space(&mut self) -> Result<(), Error> {
+        if self.rule == &JsonDisplayRule::Pretty {
+            write!(self.f, " ")?;
+        }
+        Ok(())
+    }
+
+    fn write_newline(&mut self) -> Result<(), Error> {
+        if self.rule == &JsonDisplayRule::Pretty {
+            writeln!(self.f)?;
+        }
+        Ok(())
+    }
+
+    fn write_indent(&mut self) -> Result<(), Error> {
+        if self.rule == &JsonDisplayRule::Pretty {
+            for _ in 0..(self.level.0) {
+                write!(self.f, "  ")?;
+            }
+        }
+        Ok(())
+    }
 }
 
-impl<'a, 'f, 'b> AstVisitor for JsonSerializer<'a, 'f, 'b> {
+impl<'a, 'f, 'b, 'r> AstVisitor for JsonSerializer<'a, 'f, 'b, 'r> {
     fn visit_struct(&mut self, node: &Ast) -> Result<(), Error> {
         if let Ast {
             kind: AstKind::Struct(children),
@@ -181,18 +223,25 @@ impl<'a, 'f, 'b> AstVisitor for JsonSerializer<'a, 'f, 'b> {
         } = node
         {
             write!(self.f, "{{")?;
+            self.write_newline()?;
             self.params.create_scope();
+            self.level.increment();
 
             let mut children = children.iter().peekable();
             while let Some(child) = children.next() {
+                self.write_indent()?;
                 write!(self.f, "\"{}\":", json_escape_str(&child.name))?;
+                self.write_post_colon_space()?;
                 self.visit(child)?;
                 if children.peek().is_some() {
                     write!(self.f, ",")?;
                 }
+                self.write_newline()?;
             }
 
+            self.level.decrement();
             self.params.clear_scope();
+            self.write_indent()?;
             write!(self.f, "}}")?;
             Ok(())
         } else {
@@ -207,6 +256,8 @@ impl<'a, 'f, 'b> AstVisitor for JsonSerializer<'a, 'f, 'b> {
         } = node
         {
             write!(self.f, "[")?;
+            self.write_newline()?;
+            self.level.increment();
 
             // should be simplified and reusable
             if matches!(*len, Len::Unlimited) {
@@ -216,7 +267,9 @@ impl<'a, 'f, 'b> AstVisitor for JsonSerializer<'a, 'f, 'b> {
                         is_first = false;
                     } else {
                         write!(self.f, ",")?;
+                        self.write_newline()?;
                     }
+                    self.write_indent()?;
                     self.visit(child)?;
                 }
             } else {
@@ -227,13 +280,18 @@ impl<'a, 'f, 'b> AstVisitor for JsonSerializer<'a, 'f, 'b> {
                 };
                 let mut iter = (0..*len).peekable();
                 while let Some(_) = iter.next() {
+                    self.write_indent()?;
                     self.visit(child)?;
                     if iter.peek().is_some() {
                         write!(self.f, ",")?;
+                        self.write_newline()?;
                     }
                 }
             }
+            self.write_newline()?;
 
+            self.level.decrement();
+            self.write_indent()?;
             write!(self.f, "]")?;
             Ok(())
         } else {
@@ -259,6 +317,22 @@ impl<'a, 'f, 'b> AstVisitor for JsonSerializer<'a, 'f, 'b> {
             }
         }
         Ok(())
+    }
+}
+
+struct IndentLevel(usize);
+
+impl IndentLevel {
+    fn new() -> Self {
+        Self(0)
+    }
+
+    fn increment(&mut self) {
+        self.0 += 1;
+    }
+
+    fn decrement(&mut self) {
+        self.0 -= 1;
     }
 }
 
@@ -299,7 +373,7 @@ mod tests {
             fn $name() {
                 let schema = $schema.parse::<Schema>().unwrap();
                 let buf = $buf;
-                let actual = format!("{}", JsonDisplay::new(&schema, &buf));
+                let actual = format!("{}", JsonDisplay::new(&schema, &buf, JsonDisplayRule::Minimal));
                 let expected = $expected
                     .chars()
                     .filter(|c| *c != ' ' && *c != '\n')
