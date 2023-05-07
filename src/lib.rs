@@ -12,7 +12,7 @@ pub use crate::{
     ast::{Ast, AstKind, Len, Location, Schema, SchemaParseError, SchemaParseErrorKind},
     reader::{DataReader, DataReaderOptions},
     utils::json_escape_str,
-    visitor::{AstVisitor, JsonDisplay, JsonDisplayRule, SchemaOnelineDisplay},
+    visitor::{AstVisitor, JsonDisplay, JsonFormattingStyle, SchemaOnelineDisplay},
 };
 
 fn visit<'f, F, G>(node: &'f Ast, start_f: &mut F, end_f: &mut G) -> Result<(), Error>

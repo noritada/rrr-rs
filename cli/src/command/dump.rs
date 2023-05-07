@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::{arg, ArgAction, ArgMatches, Command};
-use rrr::{DataReaderOptions, JsonDisplay, JsonDisplayRule};
+use rrr::{DataReaderOptions, JsonDisplay, JsonFormattingStyle};
 
 use crate::common::read_from_source;
 
@@ -24,9 +24,9 @@ pub(crate) async fn exec(args: &ArgMatches) -> Result<()> {
         options
     };
     let rule = if args.get_flag("pretty") {
-        JsonDisplayRule::Pretty
+        JsonFormattingStyle::Pretty
     } else {
-        JsonDisplayRule::Minimal
+        JsonFormattingStyle::Minimal
     };
     let (schema, _, body_buf) = read_from_source(fname, None, options).await?;
 

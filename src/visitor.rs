@@ -123,11 +123,11 @@ impl<'a, 'f> AstVisitor for SchemaOnelineFormatter<'a, 'f> {
 pub struct JsonDisplay<'s, 'b> {
     schema: &'s Schema,
     buf: &'b [u8],
-    rule: JsonDisplayRule,
+    rule: JsonFormattingStyle,
 }
 
 impl<'s, 'b> JsonDisplay<'s, 'b> {
-    pub fn new(schema: &'s Schema, buf: &'b [u8], rule: JsonDisplayRule) -> Self {
+    pub fn new(schema: &'s Schema, buf: &'b [u8], rule: JsonFormattingStyle) -> Self {
         Self { schema, buf, rule }
     }
 }
@@ -142,7 +142,7 @@ impl<'s, 'b> fmt::Display for JsonDisplay<'s, 'b> {
 }
 
 #[derive(PartialEq, Eq)]
-pub enum JsonDisplayRule {
+pub enum JsonFormattingStyle {
     Minimal,
     Pretty,
 }
@@ -151,7 +151,7 @@ pub struct JsonSerializer<'a, 'f, 'b, 'r> {
     f: &'f mut fmt::Formatter<'a>,
     walker: BufWalker<'b>,
     params: ParamStack,
-    rule: &'r JsonDisplayRule,
+    rule: &'r JsonFormattingStyle,
     // Indent level for formatting. This differs from `ParamStack::level`, which is a scope level
     // and does not increment for arrays.
     level: IndentLevel,
@@ -162,7 +162,7 @@ impl<'a, 'f, 'b, 'r> JsonSerializer<'a, 'f, 'b, 'r> {
         f: &'f mut fmt::Formatter<'a>,
         buf: &'b [u8],
         params: ParamStack,
-        rule: &'r JsonDisplayRule,
+        rule: &'r JsonFormattingStyle,
     ) -> Self {
         Self {
             f,
@@ -192,21 +192,21 @@ impl<'a, 'f, 'b, 'r> JsonSerializer<'a, 'f, 'b, 'r> {
     }
 
     fn write_post_colon_space(&mut self) -> Result<(), Error> {
-        if self.rule == &JsonDisplayRule::Pretty {
+        if self.rule == &JsonFormattingStyle::Pretty {
             write!(self.f, " ")?;
         }
         Ok(())
     }
 
     fn write_newline(&mut self) -> Result<(), Error> {
-        if self.rule == &JsonDisplayRule::Pretty {
+        if self.rule == &JsonFormattingStyle::Pretty {
             writeln!(self.f)?;
         }
         Ok(())
     }
 
     fn write_indent(&mut self) -> Result<(), Error> {
-        if self.rule == &JsonDisplayRule::Pretty {
+        if self.rule == &JsonFormattingStyle::Pretty {
             for _ in 0..(self.level.0) {
                 write!(self.f, "  ")?;
             }
@@ -373,7 +373,7 @@ mod tests {
             fn $name() {
                 let schema = $schema.parse::<Schema>().unwrap();
                 let buf = $buf;
-                let actual = format!("{}", JsonDisplay::new(&schema, &buf, JsonDisplayRule::Minimal));
+                let actual = format!("{}", JsonDisplay::new(&schema, &buf, JsonFormattingStyle::Minimal));
                 let expected = $expected
                     .chars()
                     .filter(|c| *c != ' ' && *c != '\n')
