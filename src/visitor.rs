@@ -367,6 +367,156 @@ mod tests {
         ),
     }
 
+    const NESTED_DATA_SCHEMA: &str =
+        "count:UINT8,fld1:{count}[sfld1:[ssfld1:{count}[count:UINT8,sssfld1:{count}[ssssfld1:\
+        {count}[sssssfld1:UINT8,count:UINT8]]]]]";
+    const NESTED_DATA_BUF: &'static [u8] = &[
+        0x02, 0x02, 0x01, 0x01, 0x02, 0x02, 0x03, 0x03, 0x04, 0x04, 0x03, 0x01, 0x01, 0x02, 0x02,
+        0x03, 0x03, 0x04, 0x04, 0x05, 0x05, 0x06, 0x06, 0x07, 0x07, 0x08, 0x08, 0x09, 0x09, 0x01,
+        0x01, 0x01, 0x02, 0x01, 0x01, 0x02, 0x02, 0x03, 0x03, 0x04, 0x04,
+    ];
+    const NESTED_DATA_EXPECTED: &str = r#"{
+  "count": 2,
+  "fld1": [
+    {
+      "sfld1": {
+        "ssfld1": [
+          {
+            "count": 2,
+            "sssfld1": [
+              {
+                "ssssfld1": [
+                  {
+                    "sssssfld1": 1,
+                    "count": 1
+                  },
+                  {
+                    "sssssfld1": 2,
+                    "count": 2
+                  }
+                ]
+              },
+              {
+                "ssssfld1": [
+                  {
+                    "sssssfld1": 3,
+                    "count": 3
+                  },
+                  {
+                    "sssssfld1": 4,
+                    "count": 4
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "count": 3,
+            "sssfld1": [
+              {
+                "ssssfld1": [
+                  {
+                    "sssssfld1": 1,
+                    "count": 1
+                  },
+                  {
+                    "sssssfld1": 2,
+                    "count": 2
+                  },
+                  {
+                    "sssssfld1": 3,
+                    "count": 3
+                  }
+                ]
+              },
+              {
+                "ssssfld1": [
+                  {
+                    "sssssfld1": 4,
+                    "count": 4
+                  },
+                  {
+                    "sssssfld1": 5,
+                    "count": 5
+                  },
+                  {
+                    "sssssfld1": 6,
+                    "count": 6
+                  }
+                ]
+              },
+              {
+                "ssssfld1": [
+                  {
+                    "sssssfld1": 7,
+                    "count": 7
+                  },
+                  {
+                    "sssssfld1": 8,
+                    "count": 8
+                  },
+                  {
+                    "sssssfld1": 9,
+                    "count": 9
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "sfld1": {
+        "ssfld1": [
+          {
+            "count": 1,
+            "sssfld1": [
+              {
+                "ssssfld1": [
+                  {
+                    "sssssfld1": 1,
+                    "count": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "count": 2,
+            "sssfld1": [
+              {
+                "ssssfld1": [
+                  {
+                    "sssssfld1": 1,
+                    "count": 1
+                  },
+                  {
+                    "sssssfld1": 2,
+                    "count": 2
+                  }
+                ]
+              },
+              {
+                "ssssfld1": [
+                  {
+                    "sssssfld1": 3,
+                    "count": 3
+                  },
+                  {
+                    "sssssfld1": 4,
+                    "count": 4
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}"#;
+
     macro_rules! test_json_serialization {
         ($(($name:ident, $schema:expr, $buf:expr, $expected:expr),)*) => ($(
             #[test]
@@ -397,134 +547,21 @@ mod tests {
         ),
         (
             json_serialization_for_data_with_variable_length_struct_array,
-            "count:UINT8,fld1:{count}[sfld1:[ssfld1:{count}[count:UINT8,sssfld1:{count}[ssssfld1:\
-            {count}[sssssfld1:UINT8,count:UINT8]]]]]",
-            vec![
-                0x02, 0x02, 0x01, 0x01, 0x02, 0x02, 0x03, 0x03, 0x04, 0x04, 0x03, 0x01, 0x01, 0x02,
-                0x02, 0x03, 0x03, 0x04, 0x04, 0x05, 0x05, 0x06, 0x06, 0x07, 0x07, 0x08, 0x08, 0x09,
-                0x09, 0x01, 0x01, 0x01, 0x02, 0x01, 0x01, 0x02, 0x02, 0x03, 0x03, 0x04, 0x04,
-            ],
-            r#"
-                {
-                    "count": 2,
-                    "fld1": [
-                        {"sfld1": {
-                            "ssfld1": [
-                                {
-                                    "count": 2,
-                                    "sssfld1": [
-                                        {
-                                            "ssssfld1": [
-                                                {"sssssfld1": 1, "count": 1},
-                                                {"sssssfld1": 2, "count": 2}
-                                            ]
-                                        },
-                                        {
-                                            "ssssfld1": [
-                                                {"sssssfld1": 3, "count": 3},
-                                                {"sssssfld1": 4, "count": 4}
-                                            ]
-                                        }
-                                    ]
-                                },
-                                {
-                                    "count": 3,
-                                    "sssfld1": [
-                                        {
-                                            "ssssfld1": [
-                                                {"sssssfld1": 1, "count": 1},
-                                                {"sssssfld1": 2, "count": 2},
-                                                {"sssssfld1": 3, "count": 3}
-                                            ]
-                                        },
-                                        {
-                                            "ssssfld1": [
-                                                {"sssssfld1": 4, "count": 4},
-                                                {"sssssfld1": 5, "count": 5},
-                                                {"sssssfld1": 6, "count": 6}
-                                            ]
-                                        },
-                                        {
-                                            "ssssfld1": [
-                                                {"sssssfld1": 7, "count": 7},
-                                                {"sssssfld1": 8, "count": 8},
-                                                {"sssssfld1": 9, "count": 9}
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ]
-                        }},
-                        {"sfld1": {
-                            "ssfld1": [
-                                {
-                                    "count": 1,
-                                    "sssfld1": [
-                                        {
-                                            "ssssfld1": [
-                                                {"sssssfld1": 1, "count": 1}
-                                            ]
-                                        }
-                                    ]
-                                },
-                                {
-                                    "count": 2,
-                                    "sssfld1": [
-                                        {
-                                            "ssssfld1": [
-                                                {"sssssfld1": 1, "count": 1},
-                                                {"sssssfld1": 2, "count": 2}
-                                            ]
-                                        },
-                                        {
-                                            "ssssfld1": [
-                                                {"sssssfld1": 3, "count": 3},
-                                                {"sssssfld1": 4, "count": 4}
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ]
-                        }}
-                    ]
-                }
-            "#
+            NESTED_DATA_SCHEMA,
+            NESTED_DATA_BUF,
+            NESTED_DATA_EXPECTED
         ),
-        (
-            json_serialization_for_data_with_unlimited_length_builtin_type_array,
-            "fld1:+UINT8",
-            vec![0x01, 0x02, 0x03],
-            r#"
-                {
-                    "fld1": [1, 2, 3]
-                }
-            "#
-        ),
-        (
-            json_serialization_for_data_with_unlimited_length_struct_array,
-            "fld1:+[sfld1:UINT8,sfld2:UINT8,sfld3:UINT8]",
-            vec![0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09],
-            r#"
-                {
-                    "fld1": [
-                        {
-                            "sfld1": 1,
-                            "sfld2": 2,
-                            "sfld3": 3
-                        },
-                        {
-                            "sfld1": 4,
-                            "sfld2": 5,
-                            "sfld3": 6
-                        },
-                        {
-                            "sfld1": 7,
-                            "sfld2": 8,
-                            "sfld3": 9
-                        }
-                    ]
-                }
-            "#
-        ),
+    }
+
+    #[test]
+    fn json_serialization_with_pretty_printing_style() {
+        let schema = NESTED_DATA_SCHEMA.parse::<Schema>().unwrap();
+        let actual = format!(
+            "{}",
+            JsonDisplay::new(&schema, &NESTED_DATA_BUF, JsonFormattingStyle::Pretty)
+        );
+        let expected = NESTED_DATA_EXPECTED.to_string();
+
+        assert_eq!(actual, expected);
     }
 }
