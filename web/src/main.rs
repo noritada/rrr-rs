@@ -37,7 +37,12 @@ fn app() -> Html {
                                 rrr::DataReaderOptions::ENABLE_READING_BODY,
                             );
                             let json = reader.read().map(|(schema, _, body_buf)| {
-                                rrr::JsonDisplay::new(&schema, &body_buf).to_string()
+                                rrr::JsonDisplay::new(
+                                    &schema,
+                                    &body_buf,
+                                    rrr::JsonFormattingStyle::Pretty,
+                                )
+                                .to_string()
                             });
                             file_content.set(json.ok())
                         }
