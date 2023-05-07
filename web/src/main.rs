@@ -56,10 +56,16 @@ fn app() -> Html {
 
     html! {
         <>
-            <h1>{ "Data Viewer" }</h1>
-            <FileDropArea on_drop={on_file_drop} />
-            <div>{ file_name }</div>
-            <div>{ content }</div>
+            <div id="menu-pane" class="pane">
+                <div id="menu">
+                    <h1>{ "Data Viewer" }</h1>
+                    <FileDropArea on_drop={on_file_drop} />
+                    <div>{ file_name }</div>
+                </div>
+            </div>
+            <div id="view-pane" class="pane">
+                <div>{ content }</div>
+            </div>
         </>
     }
 }
