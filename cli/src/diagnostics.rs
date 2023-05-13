@@ -1,8 +1,5 @@
 use anyhow::anyhow;
-use aws_sdk_s3::{
-    error::{GetObjectError, GetObjectErrorKind},
-    types::SdkError,
-};
+use aws_sdk_s3::{error::SdkError, operation::get_object::GetObjectError};
 use console::Style;
 use rrr::{SchemaParseError, SchemaParseErrorKind};
 
@@ -80,18 +77,10 @@ pub(crate) fn create_s3_download_error_report(err: SdkError<GetObjectError>) -> 
         SdkError::TimeoutError(_) => "request to S3 timed out".to_owned(),
         SdkError::DispatchFailure(_) => "request to S3 failed during dispatch".to_owned(),
         e => match e.into_service_error() {
-            GetObjectError {
-                kind: GetObjectErrorKind::InvalidObjectState(value),
-                ..
-            } => format!("invalid object state: {value}"),
-            GetObjectError {
-                kind: GetObjectErrorKind::NoSuchKey(_),
-                ..
-            } => "object does not exist".to_owned(),
-            err @ GetObjectError { .. } if err.code() == Some("SomeUnmodeledError") => {
-                "some unhandled error".to_owned()
-            }
-            _ => "error returned from S3".to_owned(),
+            GetObjectError::InvalidObjectState(value) => format!("invalid object state: {value}"),
+            GetObjectError::NoSuchKey(_) => "object does not exist".to_owned(),
+            GetObjectError::Unhandled(err) => format!("some unhandled error: {err}"),
+            err @ _ => format!("error returned from S3: {err}"),
         },
     };
     let yellow_bold = Style::new().yellow().bold();
