@@ -1,4 +1,4 @@
-name: Deploy the latest documentation to GitHub Pages
+name: Deploy the latest documentation and WASM app to GitHub Pages
 on:
   push:
     branches: [ master ]
@@ -24,14 +24,30 @@ jobs:
           submodules: recursive
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Prepare a staging directory
+        run: mkdir dist
+
       - name: Build documentation
         run: cargo doc --no-deps --release
+      - name: Stage documentation
+        run: mv target/doc dist/api
+
+      - name: Install trunk
+        run: wget -qO- https://github.com/thedodd/trunk/releases/download/v0.16.0/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf-
+      - name: Build WASM
+        run: ../trunk build --release
+        working-directory: ./web
+      - name: Stage WASM
+        run: mv web/dist dist/app
+
       - name: Setup Pages
         uses: actions/configure-pages@v2
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          path: ./target/doc
+          path: ./dist
 
   deploy:
     environment:
