@@ -37,7 +37,7 @@ jobs:
       - name: Install trunk
         run: wget -qO- https://github.com/thedodd/trunk/releases/download/v0.16.0/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf-
       - name: Build WASM
-        run: ../trunk build --release
+        run: ../trunk build --public-url /rrr-rs/app/ --release
         working-directory: ./web
       - name: Stage WASM
         run: mv web/dist dist/app
