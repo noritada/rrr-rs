@@ -31,7 +31,9 @@ impl FieldCounter {
 }
 
 impl AstVisitor for FieldCounter {
-    fn visit_struct(&mut self, node: &Ast) -> Result<(), Error> {
+    type ResultItem = ();
+
+    fn visit_struct(&mut self, node: &Ast) -> Result<Self::ResultItem, Error> {
         self.visit_default()?;
         if let Ast {
             kind: AstKind::Struct(children),
@@ -45,7 +47,7 @@ impl AstVisitor for FieldCounter {
         Ok(())
     }
 
-    fn visit_array(&mut self, node: &Ast) -> Result<(), Error> {
+    fn visit_array(&mut self, node: &Ast) -> Result<Self::ResultItem, Error> {
         self.visit_default()?;
         if let Ast {
             kind: AstKind::Array(_, child),
@@ -57,7 +59,7 @@ impl AstVisitor for FieldCounter {
         Ok(())
     }
 
-    fn visit_builtin(&mut self, _: &Ast) -> Result<(), Error> {
+    fn visit_builtin(&mut self, _: &Ast) -> Result<Self::ResultItem, Error> {
         self.visit_default()
     }
 }
@@ -140,7 +142,9 @@ impl<'a, 'f> SchemaTreeFormatter<'a, 'f> {
 }
 
 impl<'a, 'f> AstVisitor for SchemaTreeFormatter<'a, 'f> {
-    fn visit_struct(&mut self, node: &Ast) -> Result<(), Error> {
+    type ResultItem = ();
+
+    fn visit_struct(&mut self, node: &Ast) -> Result<Self::ResultItem, Error> {
         if let Ast {
             name,
             kind: AstKind::Struct(children),
@@ -160,7 +164,7 @@ impl<'a, 'f> AstVisitor for SchemaTreeFormatter<'a, 'f> {
         }
     }
 
-    fn visit_array(&mut self, node: &Ast) -> Result<(), Error> {
+    fn visit_array(&mut self, node: &Ast) -> Result<Self::ResultItem, Error> {
         if let Ast {
             kind: AstKind::Array(_, child),
             ..
@@ -176,7 +180,7 @@ impl<'a, 'f> AstVisitor for SchemaTreeFormatter<'a, 'f> {
         }
     }
 
-    fn visit_builtin(&mut self, node: &Ast) -> Result<(), Error> {
+    fn visit_builtin(&mut self, node: &Ast) -> Result<Self::ResultItem, Error> {
         self.write_line(prettify_special_field_name(&node.name), &node.kind)?;
         Ok(())
     }

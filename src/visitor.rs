@@ -10,11 +10,13 @@ use crate::{
 };
 
 pub trait AstVisitor {
-    fn visit_struct(&mut self, node: &Ast) -> Result<(), Error>;
-    fn visit_array(&mut self, node: &Ast) -> Result<(), Error>;
-    fn visit_builtin(&mut self, node: &Ast) -> Result<(), Error>;
+    type ResultItem;
 
-    fn visit(&mut self, node: &Ast) -> Result<(), Error> {
+    fn visit_struct(&mut self, node: &Ast) -> Result<Self::ResultItem, Error>;
+    fn visit_array(&mut self, node: &Ast) -> Result<Self::ResultItem, Error>;
+    fn visit_builtin(&mut self, node: &Ast) -> Result<Self::ResultItem, Error>;
+
+    fn visit(&mut self, node: &Ast) -> Result<Self::ResultItem, Error> {
         match node.kind {
             AstKind::Struct(_) => self.visit_struct(node),
             AstKind::Array(_, _) => self.visit_array(node),
@@ -53,7 +55,9 @@ impl<'a, 'f> SchemaOnelineFormatter<'a, 'f> {
 }
 
 impl<'a, 'f> AstVisitor for SchemaOnelineFormatter<'a, 'f> {
-    fn visit_struct(&mut self, node: &Ast) -> Result<(), Error> {
+    type ResultItem = ();
+
+    fn visit_struct(&mut self, node: &Ast) -> Result<Self::ResultItem, Error> {
         if let Ast {
             name,
             kind: AstKind::Struct(children),
@@ -82,7 +86,7 @@ impl<'a, 'f> AstVisitor for SchemaOnelineFormatter<'a, 'f> {
         }
     }
 
-    fn visit_array(&mut self, node: &Ast) -> Result<(), Error> {
+    fn visit_array(&mut self, node: &Ast) -> Result<Self::ResultItem, Error> {
         if let Ast {
             name,
             kind: AstKind::Array(len, child),
@@ -100,7 +104,7 @@ impl<'a, 'f> AstVisitor for SchemaOnelineFormatter<'a, 'f> {
         }
     }
 
-    fn visit_builtin(&mut self, node: &Ast) -> Result<(), Error> {
+    fn visit_builtin(&mut self, node: &Ast) -> Result<Self::ResultItem, Error> {
         self.write_name(&node.name)?;
         match node.kind {
             AstKind::Int8 => write!(self.f, "INT8"),
@@ -216,7 +220,9 @@ impl<'a, 'f, 'b, 'r> JsonSerializer<'a, 'f, 'b, 'r> {
 }
 
 impl<'a, 'f, 'b, 'r> AstVisitor for JsonSerializer<'a, 'f, 'b, 'r> {
-    fn visit_struct(&mut self, node: &Ast) -> Result<(), Error> {
+    type ResultItem = ();
+
+    fn visit_struct(&mut self, node: &Ast) -> Result<Self::ResultItem, Error> {
         if let Ast {
             kind: AstKind::Struct(children),
             ..
@@ -249,7 +255,7 @@ impl<'a, 'f, 'b, 'r> AstVisitor for JsonSerializer<'a, 'f, 'b, 'r> {
         }
     }
 
-    fn visit_array(&mut self, node: &Ast) -> Result<(), Error> {
+    fn visit_array(&mut self, node: &Ast) -> Result<Self::ResultItem, Error> {
         if let Ast {
             kind: AstKind::Array(len, child),
             ..
@@ -299,7 +305,7 @@ impl<'a, 'f, 'b, 'r> AstVisitor for JsonSerializer<'a, 'f, 'b, 'r> {
         }
     }
 
-    fn visit_builtin(&mut self, node: &Ast) -> Result<(), Error> {
+    fn visit_builtin(&mut self, node: &Ast) -> Result<Self::ResultItem, Error> {
         let value = self.walker.read(node)?;
         match value {
             Value::Number(ref n) => self.write_number(n)?,
