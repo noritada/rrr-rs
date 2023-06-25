@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2023-06-25
+
+### Changed
+
+- Library `rrr`
+  - It is now possible to return values using `visit_*` methods of `AstVisitor`.
+
 ## [0.8.0] - 2023-05-07
 
 ### Added
@@ -120,7 +127,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - dump: dump the data in the specified file
     - schema: display the schema of the data in the specified file
 
-[unreleased]: https://github.com/noritada/rrr-rs/compare/v0.8.0...HEAD
+[unreleased]: https://github.com/noritada/rrr-rs/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/noritada/rrr-rs/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/noritada/rrr-rs/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/noritada/rrr-rs/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/noritada/rrr-rs/compare/v0.5.1...v0.6.0
