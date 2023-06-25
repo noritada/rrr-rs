@@ -44,6 +44,7 @@
         background-color: #f9f9f9;
       }
 
+      #schema-pane,
       #view-pane {
         overflow-y: scroll;
         border: 2px dashed #ccc;
@@ -51,6 +52,66 @@
         white-space: pre;
         font-family: monospace;
         font-size: 12px;
+      }
+
+      .tree {
+        text-align: start;
+        white-space: pre;
+        font-family: monospace;
+        font-size: 12px;
+      }
+
+      .tree ul {
+        list-style-type: none;
+        margin: 0 0 0 12px;
+        padding: 0;
+        position: relative;
+      }
+
+      .tree ul li {
+        position: relative;
+        margin: 0;
+        padding: 4px 0 4px 16px;
+      }
+
+      .tree ul li:before {
+        content: "";
+        display: block;
+        position: absolute;
+        top: 12px;
+        left: 0;
+        width: 12px;
+        height: 0;
+        border-top: 1px solid #666;
+      }
+
+      .tree ul li:after {
+        content: "";
+        display: block;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 0;
+        height: 100%;
+        border-left: 1px solid #666;
+      }
+
+      .tree ul li:last-child:after {
+        height: 12px;
+      }
+
+      .name {
+        font-weight: bold;
+      }
+
+      .type {
+        margin: 0 0 0 16px;
+        background-color: #00c;
+        padding: 4px;
+        color: #ccc;
+        border-radius: 16px;
+        font-size: 8px;
       }
     </style>
   </head>

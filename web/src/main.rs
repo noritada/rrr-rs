@@ -2,14 +2,18 @@ use std::ops::Deref;
 
 use drop_area::FileDropArea;
 use gloo_file::{futures::read_as_bytes, Blob};
+use rrr::AstVisitor;
 use yew::prelude::*;
 
 mod drop_area;
+mod tree;
 
 #[function_component(App)]
 fn app() -> Html {
     let dropped_file = use_state(|| None);
     let file_content = use_state(|| None);
+    let body_json = use_state(|| None);
+    let schema_tree = use_state(|| None);
 
     let on_file_drop = {
         let dropped_file = dropped_file.clone();
@@ -36,15 +40,8 @@ fn app() -> Html {
                                 std::io::Cursor::new(&bytes),
                                 rrr::DataReaderOptions::ENABLE_READING_BODY,
                             );
-                            let json = reader.read().map(|(schema, _, body_buf)| {
-                                rrr::JsonDisplay::new(
-                                    &schema,
-                                    &body_buf,
-                                    rrr::JsonFormattingStyle::Pretty,
-                                )
-                                .to_string()
-                            });
-                            file_content.set(json.ok())
+                            let triplet = reader.read();
+                            file_content.set(triplet.ok())
                         }
                     });
                 }
@@ -53,8 +50,45 @@ fn app() -> Html {
         );
     }
 
-    let content = if let Some(content) = file_content.as_ref() {
-        content.to_string()
+    {
+        let schema_tree = schema_tree.clone();
+        let triplet = file_content.clone();
+        let file_content = file_content.clone();
+        use_effect_with_deps(
+            move |_| {
+                if let Some((schema, _, _)) = triplet.as_ref() {
+                    let mut formatter = tree::SchemaTreeFormatter;
+                    schema_tree.set(formatter.visit(&schema.ast).ok());
+                }
+            },
+            file_content,
+        );
+    }
+
+    {
+        let body_json = body_json.clone();
+        let triplet = file_content.clone();
+        use_effect_with_deps(
+            move |_| {
+                if let Some((schema, _, body_buf)) = triplet.as_ref() {
+                    let json =
+                        rrr::JsonDisplay::new(&schema, &body_buf, rrr::JsonFormattingStyle::Pretty)
+                            .to_string();
+                    body_json.set(Some(json))
+                }
+            },
+            file_content,
+        );
+    }
+
+    let schema_tree_view = if let Some(schema_tree) = schema_tree.as_ref() {
+        schema_tree.clone()
+    } else {
+        html! {}
+    };
+
+    let body_json = if let Some(json) = body_json.as_ref() {
+        json.to_string()
     } else {
         String::new()
     };
@@ -68,8 +102,9 @@ fn app() -> Html {
                     <div>{ file_name }</div>
                 </div>
             </div>
+            <div id="schema-pane" class="pane tree"><div>{ schema_tree_view }</div></div>
             <div id="view-pane" class="pane">
-                <div>{ content }</div>
+                <div>{ body_json }</div>
             </div>
         </>
     }
