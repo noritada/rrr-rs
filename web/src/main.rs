@@ -10,7 +10,7 @@ mod tree;
 #[function_component(App)]
 fn app() -> Html {
     let dropped_file = use_state(|| None);
-    let file_content = use_state(|| None);
+    let body_json = use_state(|| None);
 
     let on_file_drop = {
         let dropped_file = dropped_file.clone();
@@ -24,7 +24,7 @@ fn app() -> Html {
     };
 
     {
-        let file_content = file_content.clone();
+        let body_json = body_json.clone();
         let file = dropped_file.clone();
         use_effect_with_deps(
             move |_| {
@@ -45,7 +45,7 @@ fn app() -> Html {
                                 )
                                 .to_string()
                             });
-                            file_content.set(json.ok())
+                            body_json.set(json.ok())
                         }
                     });
                 }
@@ -54,8 +54,8 @@ fn app() -> Html {
         );
     }
 
-    let content = if let Some(content) = file_content.as_ref() {
-        content.to_string()
+    let body_json = if let Some(json) = body_json.as_ref() {
+        json.to_string()
     } else {
         String::new()
     };
@@ -70,7 +70,7 @@ fn app() -> Html {
                 </div>
             </div>
             <div id="view-pane" class="pane">
-                <div>{ content }</div>
+                <div>{ body_json }</div>
             </div>
         </>
     }
