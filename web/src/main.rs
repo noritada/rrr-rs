@@ -5,6 +5,7 @@ use gloo_file::{futures::read_as_bytes, Blob};
 use yew::prelude::*;
 
 mod drop_area;
+mod tree;
 
 #[function_component(App)]
 fn app() -> Html {
