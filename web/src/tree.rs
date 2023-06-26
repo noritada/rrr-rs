@@ -18,10 +18,9 @@ impl AstVisitor for SchemaTreeFormatter {
                 .map(|c| html! { <li>{ c }</li> })
                 .collect::<Html>();
 
-            let name = prettify_special_field_name(&node.name);
             let html = html! {
                 <>
-                    { htmlify(name, &node.kind) }
+                    { create_node(node) }
                     <ul>{ children_html }</ul>
                 </>
             };
@@ -37,10 +36,9 @@ impl AstVisitor for SchemaTreeFormatter {
             ..
         } = node
         {
-            let name = prettify_special_field_name(&node.name);
             let html = html! {
                 <>
-                    { htmlify(name, &node.kind) }
+                    { create_node(node) }
                     <ul>
                         <li>{ self.visit(child)? }</li>
                     </ul>
@@ -53,10 +51,14 @@ impl AstVisitor for SchemaTreeFormatter {
     }
 
     fn visit_builtin(&mut self, node: &Ast) -> Result<Self::ResultItem, Error> {
-        let name = prettify_special_field_name(&node.name);
-        let html = htmlify(name, &node.kind);
+        let html = create_node(node);
         Ok(html)
     }
+}
+
+fn create_node(node: &Ast) -> Html {
+    let name = prettify_special_field_name(&node.name);
+    htmlify(name, &node.kind)
 }
 
 fn htmlify(name: &str, kind: &AstKind) -> Html {
