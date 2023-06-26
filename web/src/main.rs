@@ -20,7 +20,7 @@ fn app() -> Html {
         Callback::from(move |file: web_sys::File| dropped_file.set(Some(file)))
     };
 
-    let file_name = if let Some(file) = dropped_file.clone().as_ref() {
+    let file_name = if let Some(file) = dropped_file.as_ref() {
         file.name()
     } else {
         String::new()
@@ -72,7 +72,7 @@ fn app() -> Html {
             move |_| {
                 if let Some((schema, _, body_buf)) = triplet.as_ref() {
                     let json =
-                        rrr::JsonDisplay::new(&schema, &body_buf, rrr::JsonFormattingStyle::Pretty)
+                        rrr::JsonDisplay::new(schema, body_buf, rrr::JsonFormattingStyle::Pretty)
                             .to_string();
                     body_json.set(Some(json))
                 }
