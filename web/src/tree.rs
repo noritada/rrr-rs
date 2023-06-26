@@ -1,7 +1,12 @@
 use rrr::{Ast, AstKind, AstVisitor, Error, Len};
 use yew::prelude::*;
 
-pub(crate) struct SchemaTreeFormatter;
+pub(crate) fn create_schema_tree(ast: &Ast) -> Result<Html, Error> {
+    let mut formatter = SchemaTreeFormatter;
+    formatter.visit(ast)
+}
+
+struct SchemaTreeFormatter;
 
 impl AstVisitor for SchemaTreeFormatter {
     type ResultItem = Html;
@@ -108,8 +113,7 @@ mod tests {
             fn $name() {
                 let input = $input;
                 let schema = input.parse::<Schema>().unwrap();
-                let mut formatter = SchemaTreeFormatter;
-                let actual = formatter.visit(&schema.ast).unwrap();
+                let actual = create_schema_tree(&schema.ast).unwrap();
                 let expected = $expected;
 
                 assert_eq!(actual, expected);

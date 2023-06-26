@@ -2,7 +2,6 @@ use std::ops::Deref;
 
 use drop_area::FileDropArea;
 use gloo_file::{futures::read_as_bytes, Blob};
-use rrr::AstVisitor;
 use yew::prelude::*;
 
 mod drop_area;
@@ -57,8 +56,7 @@ fn app() -> Html {
         use_effect_with_deps(
             move |_| {
                 if let Some((schema, _, _)) = triplet.as_ref() {
-                    let mut formatter = tree::SchemaTreeFormatter;
-                    schema_tree.set(formatter.visit(&schema.ast).ok());
+                    schema_tree.set(tree::create_schema_tree(&schema.ast).ok());
                 }
             },
             file_content,
