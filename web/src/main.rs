@@ -2,7 +2,6 @@ use std::ops::Deref;
 
 use drop_area::FileDropArea;
 use gloo_file::{futures::read_as_bytes, Blob};
-use rrr::AstVisitor;
 use yew::prelude::*;
 
 mod drop_area;
@@ -20,7 +19,7 @@ fn app() -> Html {
         Callback::from(move |file: web_sys::File| dropped_file.set(Some(file)))
     };
 
-    let file_name = if let Some(file) = dropped_file.clone().as_ref() {
+    let file_name = if let Some(file) = dropped_file.as_ref() {
         file.name()
     } else {
         String::new()
@@ -57,8 +56,7 @@ fn app() -> Html {
         use_effect_with_deps(
             move |_| {
                 if let Some((schema, _, _)) = triplet.as_ref() {
-                    let mut formatter = tree::SchemaTreeFormatter;
-                    schema_tree.set(formatter.visit(&schema.ast).ok());
+                    schema_tree.set(tree::create_schema_tree(&schema.ast).ok());
                 }
             },
             file_content,
@@ -72,7 +70,7 @@ fn app() -> Html {
             move |_| {
                 if let Some((schema, _, body_buf)) = triplet.as_ref() {
                     let json =
-                        rrr::JsonDisplay::new(&schema, &body_buf, rrr::JsonFormattingStyle::Pretty)
+                        rrr::JsonDisplay::new(schema, body_buf, rrr::JsonFormattingStyle::Pretty)
                             .to_string();
                     body_json.set(Some(json))
                 }
