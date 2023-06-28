@@ -12,6 +12,7 @@ mod tree;
 fn app() -> Html {
     let dropped_file = use_state(|| None);
     let file_content = use_state(|| None);
+    let header_fields = use_state(|| None);
     let body_json = use_state(|| None);
     let schema_tree = use_state(|| None);
 
@@ -51,6 +52,20 @@ fn app() -> Html {
     }
 
     {
+        let header_fields = header_fields.clone();
+        let triplet = file_content.clone();
+        let file_content = file_content.clone();
+        use_effect_with_deps(
+            move |_| {
+                if let Some((_, header, _)) = triplet.as_ref() {
+                    header_fields.set(Some(header::create_header_view(&header)));
+                }
+            },
+            file_content,
+        );
+    }
+
+    {
         let schema_tree = schema_tree.clone();
         let triplet = file_content.clone();
         let file_content = file_content.clone();
@@ -80,6 +95,12 @@ fn app() -> Html {
         );
     }
 
+    let header_view = if let Some(fields) = header_fields.as_ref() {
+        fields.clone()
+    } else {
+        html! {}
+    };
+
     let schema_tree_view = if let Some(schema_tree) = schema_tree.as_ref() {
         schema_tree.clone()
     } else {
@@ -101,6 +122,7 @@ fn app() -> Html {
                     <div>{ file_name }</div>
                 </div>
             </div>
+            <div id="header-pane" class="pane">{ header_view }</div>
             <div id="schema-pane" class="pane tree"><div>{ schema_tree_view }</div></div>
             <div id="view-pane" class="pane">
                 <div>{ body_json }</div>
