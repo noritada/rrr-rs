@@ -10,7 +10,7 @@ pub(crate) fn create_header_view(map: &HashMap<Vec<u8>, Vec<u8>>) -> Html {
 
 fn create_header_field(key: &[u8], value: &[u8]) -> Html {
     html! {
-        <div>
+        <div class="header-item">
             <span class="header-key">{ String::from_utf8_lossy(key) }</span>
             <span class="header-value">{ String::from_utf8_lossy(value) }</span>
         </div>
@@ -29,11 +29,11 @@ mod tests {
         let actual = create_header_view(&map);
         let expected = html! {
             <>
-                <div>
+                <div class="header-item">
                     <span class="header-key">{ String::from("key1") }</span>
                     <span class="header-value">{ String::from("value1") }</span>
                 </div>
-                <div>
+                <div class="header-item">
                     <span class="header-key">{ String::from("key2") }</span>
                     <span class="header-value">{ String::from("value2") }</span>
                 </div>
