@@ -26,6 +26,11 @@ fn app() -> Html {
     } else {
         String::new()
     };
+    let file_size = if let Some(file) = dropped_file.as_ref() {
+        format!("{:.0} bytes", file.size())
+    } else {
+        "--".to_owned()
+    };
 
     {
         let file_content = file_content.clone();
@@ -95,6 +100,12 @@ fn app() -> Html {
         );
     }
 
+    let file_name = if file_name.is_empty() {
+        "--".to_owned()
+    } else {
+        file_name
+    };
+
     let header_view = if let Some(fields) = header_fields.as_ref() {
         fields.clone()
     } else {
@@ -119,7 +130,16 @@ fn app() -> Html {
                 <div id="menu">
                     <h1>{ "Data Viewer" }</h1>
                     <FileDropArea on_drop={on_file_drop} />
-                    <div>{ file_name }</div>
+                    <div id="file-info">
+                        <div class="file-info-item">
+                            <span class="file-info-key">{ "File name" }</span>
+                            <span>{ file_name }</span>
+                        </div>
+                        <div class="file-info-item">
+                            <span class="file-info-key">{ "File size" }</span>
+                            <span>{ file_size }</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div id="header-pane" class="pane">{ header_view }</div>
