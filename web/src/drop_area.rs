@@ -60,7 +60,9 @@ pub(crate) fn file_drop_area(FileDropAreaProps { on_drop }: &FileDropAreaProps) 
 
     html! {
         <div id={ "drop-zone" } ondragover={on_drag_over} ondragleave={on_drag_leave} ondrop={on_file_drop}>
-            { "Drag and drop file here" }
+            <div id="drop-zone-content">
+                { "Drag and drop file here" }
+            </div>
         </div>
     }
 }

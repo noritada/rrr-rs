@@ -125,9 +125,9 @@ fn app() -> Html {
     };
 
     html! {
-        <>
+        <div id="main">
             <div id="menu-pane" class="pane">
-                <div id="menu">
+                <>
                     <h1>{ "Data Viewer" }</h1>
                     <FileDropArea on_drop={on_file_drop} />
                     <div id="file-info">
@@ -140,14 +140,14 @@ fn app() -> Html {
                             <span>{ file_size }</span>
                         </div>
                     </div>
-                </div>
+                </>
             </div>
             <div id="header-pane" class="pane">{ header_view }</div>
             <div id="schema-pane" class="pane tree"><div>{ schema_tree_view }</div></div>
             <div id="view-pane" class="pane">
                 <div>{ body_json }</div>
             </div>
-        </>
+        </div>
     }
 }
 

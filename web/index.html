@@ -5,13 +5,22 @@
     <title>Data Viewer</title>
     <style>
       body {
+        position: relative;
         margin: 0;
         padding: 0;
         height: 100vh;
-        display: flex;
-        flex-direction: row;
         font-family: Arial, sans-serif;
         text-align: center;
+      }
+
+      #main {
+        position: absolute;
+        height: 100%;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 12px;
+        display: flex;
+        flex-direction: row;
       }
 
       .pane {
@@ -22,18 +31,17 @@
         color: #333;
       }
 
-      #menu {
+      #drop-zone {
+        height: 100%;
         width: 100%;
-        padding: 0 20px;
         box-sizing: border-box;
+        padding: 20px;
       }
 
-      #drop-zone {
-        border: 2px dashed #ccc;
+      #drop-zone-content {
+        height: 100%;
         box-sizing: border-box;
-        padding: 100px 20px;
-        margin: 20px auto;
-        width: 100%;
+        border: 2px dashed #ccc;
         font-size: 18px;
         line-height: 1.5;
         color: #666;
@@ -41,7 +49,8 @@
         transition: all 0.3s ease-in-out;
       }
 
-      #drop-zone.dragover {
+      #drop-zone.dragover #drop-zone-content,
+      #drop-zone-content.dragover {
         border-color: #000;
         background-color: #f9f9f9;
       }
