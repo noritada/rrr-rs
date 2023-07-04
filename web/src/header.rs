@@ -1,8 +1,8 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use yew::prelude::*;
 
-pub(crate) fn create_header_view(map: &HashMap<Vec<u8>, Vec<u8>>) -> Html {
+pub(crate) fn create_header_view(map: &BTreeMap<Vec<u8>, Vec<u8>>) -> Html {
     map.iter()
         .map(|(key, value)| create_header_field(key, value))
         .collect::<Html>()
@@ -23,7 +23,7 @@ mod tests {
 
     #[test]
     fn header_view_creation() {
-        let mut map = HashMap::new();
+        let mut map = BTreeMap::new();
         map.insert(b"key1".to_vec(), b"value1".to_vec());
         map.insert(b"key2".to_vec(), b"value2".to_vec());
         let actual = create_header_view(&map);
