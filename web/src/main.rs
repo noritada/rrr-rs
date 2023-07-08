@@ -138,9 +138,8 @@ fn app() -> Html {
 
     html! {
         <>
-        <div id="main" ondragover={ on_drag_over }>
-            <div id="menu-pane" class="pane">
-                <>
+            <div id="main" ondragover={ on_drag_over }>
+                <div id="menu-pane" class="pane">
                     <h1>{ "Data Viewer" }</h1>
                     <div id="file-info">
                         <div class="file-info-item">
@@ -152,15 +151,14 @@ fn app() -> Html {
                             <span>{ file_size }</span>
                         </div>
                     </div>
-                </>
+                </div>
+                <div id="header-pane" class="pane">{ header_view }</div>
+                <div id="schema-pane" class="pane tree"><div>{ schema_tree_view }</div></div>
+                <div id="view-pane" class="pane">
+                    <div>{ body_json }</div>
+                </div>
             </div>
-            <div id="header-pane" class="pane">{ header_view }</div>
-            <div id="schema-pane" class="pane tree"><div>{ schema_tree_view }</div></div>
-            <div id="view-pane" class="pane">
-                <div>{ body_json }</div>
-            </div>
-        </div>
-        <FileDropArea first_time={*first_time} on_drop={on_file_drop} />
+            <FileDropArea first_time={*first_time} on_drop={on_file_drop} />
         </>
     }
 }
