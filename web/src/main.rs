@@ -10,15 +10,20 @@ mod tree;
 
 #[function_component(App)]
 fn app() -> Html {
+    let first_time = use_state(|| true);
     let dropped_file = use_state(|| None);
     let file_content = use_state(|| None);
     let header_fields = use_state(|| None);
     let body_json = use_state(|| None);
     let schema_tree = use_state(|| None);
 
+    let first_time_ = first_time.clone();
     let on_file_drop = {
         let dropped_file = dropped_file.clone();
-        Callback::from(move |file: web_sys::File| dropped_file.set(Some(file)))
+        Callback::from(move |file: web_sys::File| {
+            dropped_file.set(Some(file));
+            first_time_.set(false);
+        })
     };
 
     let file_name = if let Some(file) = dropped_file.as_ref() {
@@ -30,6 +35,13 @@ fn app() -> Html {
         format!("{:.0} bytes", file.size())
     } else {
         "--".to_owned()
+    };
+
+    let on_drag_over = {
+        Callback::from(move |e: DragEvent| {
+            e.prevent_default();
+            drop_area::display_drop_zone();
+        })
     };
 
     {
@@ -126,10 +138,9 @@ fn app() -> Html {
 
     html! {
         <>
-            <div id="menu-pane" class="pane">
-                <div id="menu">
+            <div id="main" ondragover={ on_drag_over }>
+                <div id="menu-pane" class="pane">
                     <h1>{ "Data Viewer" }</h1>
-                    <FileDropArea on_drop={on_file_drop} />
                     <div id="file-info">
                         <div class="file-info-item">
                             <span class="file-info-key">{ "File name" }</span>
@@ -141,12 +152,13 @@ fn app() -> Html {
                         </div>
                     </div>
                 </div>
+                <div id="header-pane" class="pane">{ header_view }</div>
+                <div id="schema-pane" class="pane tree"><div>{ schema_tree_view }</div></div>
+                <div id="view-pane" class="pane">
+                    <div>{ body_json }</div>
+                </div>
             </div>
-            <div id="header-pane" class="pane">{ header_view }</div>
-            <div id="schema-pane" class="pane tree"><div>{ schema_tree_view }</div></div>
-            <div id="view-pane" class="pane">
-                <div>{ body_json }</div>
-            </div>
+            <FileDropArea first_time={*first_time} on_drop={on_file_drop} />
         </>
     }
 }
