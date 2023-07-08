@@ -31,21 +31,27 @@
         color: #333;
       }
 
+      .invisible {
+        display: none;
+      }
+
       #drop-zone {
+        position: absolute;
         height: 100%;
         width: 100%;
         box-sizing: border-box;
-        padding: 20px;
+        padding: 5%;
+        background-color: #fff;
       }
 
       #drop-zone-content {
         height: 100%;
         box-sizing: border-box;
-        border: 2px dashed #ccc;
-        font-size: 18px;
+        border: 10px dashed #ccc;
+        font-size: 60px;
         line-height: 1.5;
         color: #666;
-        border-radius: 10px;
+        border-radius: 30px;
         transition: all 0.3s ease-in-out;
         pointer-events: none;
       }
