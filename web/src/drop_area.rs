@@ -28,7 +28,7 @@ pub(crate) fn file_drop_area(
             }
         })
     };
-    let first_time_ = first_time.clone();
+    let first_time_ = *first_time;
     let on_drag_leave = {
         Callback::from(move |e: DragEvent| {
             e.prevent_default();
