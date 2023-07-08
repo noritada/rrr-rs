@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::BTreeMap,
     io::{BufRead, Seek},
 };
 
@@ -12,7 +12,7 @@ pub(crate) async fn read_from_source(
     source: &str,
     n_bytes: Option<&usize>,
     options: DataReaderOptions,
-) -> Result<(Schema, HashMap<Vec<u8>, Vec<u8>>, Vec<u8>)> {
+) -> Result<(Schema, BTreeMap<Vec<u8>, Vec<u8>>, Vec<u8>)> {
     if source[0..5] == "s3://"[..] {
         read_from_s3(source, n_bytes, options).await
     } else {
@@ -24,7 +24,7 @@ async fn read_from_s3(
     url: &str,
     n_bytes: Option<&usize>,
     options: DataReaderOptions,
-) -> Result<(Schema, HashMap<Vec<u8>, Vec<u8>>, Vec<u8>)> {
+) -> Result<(Schema, BTreeMap<Vec<u8>, Vec<u8>>, Vec<u8>)> {
     let url = url::Url::parse(url)?;
 
     let bucket_name = if let Some(url::Host::Domain(s)) = url.host() {
@@ -67,7 +67,7 @@ async fn download_s3_object(
 fn read_from_file(
     fname: &str,
     options: DataReaderOptions,
-) -> Result<(Schema, HashMap<Vec<u8>, Vec<u8>>, Vec<u8>)> {
+) -> Result<(Schema, BTreeMap<Vec<u8>, Vec<u8>>, Vec<u8>)> {
     let input_path = std::path::PathBuf::from(fname);
     let f = std::fs::File::open(input_path)?;
     let f = std::io::BufReader::new(f);
@@ -77,7 +77,7 @@ fn read_from_file(
 fn read_from_reader<R>(
     reader: R,
     options: DataReaderOptions,
-) -> Result<(Schema, HashMap<Vec<u8>, Vec<u8>>, Vec<u8>)>
+) -> Result<(Schema, BTreeMap<Vec<u8>, Vec<u8>>, Vec<u8>)>
 where
     R: BufRead + Seek,
 {

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt};
+use std::{collections::BTreeMap, fmt};
 
 use anyhow::Result;
 use clap::{arg, ArgMatches, Command};
@@ -28,7 +28,7 @@ pub(crate) async fn exec(args: &ArgMatches) -> Result<()> {
     Ok(())
 }
 
-struct HeaderDisplay<'a>(&'a HashMap<Vec<u8>, Vec<u8>>);
+struct HeaderDisplay<'a>(&'a BTreeMap<Vec<u8>, Vec<u8>>);
 
 impl<'a> fmt::Display for HeaderDisplay<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

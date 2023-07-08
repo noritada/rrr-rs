@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::BTreeMap,
     io::{BufRead, Read, Seek, SeekFrom},
 };
 
@@ -30,7 +30,7 @@ impl<R> DataReader<R>
 where
     R: BufRead + Seek,
 {
-    pub fn read(&mut self) -> Result<(Schema, HashMap<Vec<u8>, Vec<u8>>, Vec<u8>), Error> {
+    pub fn read(&mut self) -> Result<(Schema, BTreeMap<Vec<u8>, Vec<u8>>, Vec<u8>), Error> {
         self.inner.rewind()?;
         self.find_magic()?;
         let map = self.read_header_fields()?;
@@ -73,7 +73,7 @@ where
 
     fn read_header_fields(&mut self) -> Result<FieldMap, Error> {
         let mut sep_buf = vec![0; Self::SEP_MAGIC_LEN];
-        let mut map = HashMap::new();
+        let mut map = BTreeMap::new();
 
         loop {
             self.inner
@@ -168,10 +168,10 @@ where
     }
 }
 
-struct FieldMap(HashMap<Vec<u8>, Vec<u8>>);
+struct FieldMap(BTreeMap<Vec<u8>, Vec<u8>>);
 
 impl FieldMap {
-    fn inner(self) -> HashMap<Vec<u8>, Vec<u8>> {
+    fn inner(self) -> BTreeMap<Vec<u8>, Vec<u8>> {
         let Self(inner) = self;
         inner
     }
