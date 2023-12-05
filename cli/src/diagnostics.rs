@@ -79,7 +79,6 @@ pub(crate) fn create_s3_download_error_report(err: SdkError<GetObjectError>) -> 
         e => match e.into_service_error() {
             GetObjectError::InvalidObjectState(value) => format!("invalid object state: {value}"),
             GetObjectError::NoSuchKey(_) => "object does not exist".to_owned(),
-            GetObjectError::Unhandled(err) => format!("some unhandled error: {err}"),
             err @ _ => format!("error returned from S3: {err}"),
         },
     };

@@ -9,8 +9,8 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = "1"
-aws-config = "0.57"
-aws-sdk-s3 = "0.36"
+aws-config = "0.100"
+aws-sdk-s3 = "0.37"
 bytes = "1"
 clap = "4"
 clap_complete = "4"
