@@ -37,7 +37,13 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: |
         rustup target add ${{ matrix.target }}
-        sudo apt -qq install musl-tools
+        sudo apt-get -qq update  # prevent 404 when the "latest" image is changed
+        sudo apt -qq install musl-tools gcc-aarch64-linux-gnu
+        mkdir -p .cargo
+        cat << EOS > .cargo/config.toml
+        [target.aarch64-unknown-linux-musl]
+        linker = "aarch64-linux-gnu-gcc"
+        EOS
     - name: Build
       run: cargo build --all --release --target ${{ matrix.target }} --verbose
     - name: Create an archive to maintain the file permission (in non-Windows environments)
