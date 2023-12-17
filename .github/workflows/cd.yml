@@ -13,6 +13,8 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
           - os: windows-latest
             target: x86_64-pc-windows-msvc
           - os: macOS-latest
@@ -34,8 +36,14 @@ jobs:
     - name: Setup musl
       if: matrix.os == 'ubuntu-latest'
       run: |
-        rustup target add x86_64-unknown-linux-musl
-        sudo apt -qq install musl-tools
+        rustup target add ${{ matrix.target }}
+        sudo apt-get -qq update  # prevent 404 when the "latest" image is changed
+        sudo apt -qq install musl-tools gcc-aarch64-linux-gnu
+        mkdir -p .cargo
+        cat << EOS > .cargo/config.toml
+        [target.aarch64-unknown-linux-musl]
+        linker = "aarch64-linux-gnu-gcc"
+        EOS
     - name: Build
       run: cargo build --all --release --target ${{ matrix.target }} --verbose
     - name: Create an archive to maintain the file permission (in non-Windows environments)
