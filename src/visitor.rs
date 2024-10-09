@@ -27,7 +27,7 @@ pub trait AstVisitor {
 
 pub struct SchemaOnelineDisplay<'a>(pub &'a Ast);
 
-impl<'a> fmt::Display for SchemaOnelineDisplay<'a> {
+impl fmt::Display for SchemaOnelineDisplay<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut formatter = SchemaOnelineFormatter::new(f);
         let Self(inner) = self;
@@ -54,7 +54,7 @@ impl<'a, 'f> SchemaOnelineFormatter<'a, 'f> {
     }
 }
 
-impl<'a, 'f> AstVisitor for SchemaOnelineFormatter<'a, 'f> {
+impl AstVisitor for SchemaOnelineFormatter<'_, '_> {
     type ResultItem = ();
 
     fn visit_struct(&mut self, node: &Ast) -> Result<Self::ResultItem, Error> {
@@ -136,7 +136,7 @@ impl<'s, 'b> JsonDisplay<'s, 'b> {
     }
 }
 
-impl<'s, 'b> fmt::Display for JsonDisplay<'s, 'b> {
+impl fmt::Display for JsonDisplay<'_, '_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut formatter =
             JsonSerializer::new(f, self.buf, self.schema.params.clone(), &self.rule);
@@ -219,7 +219,7 @@ impl<'a, 'f, 'b, 'r> JsonSerializer<'a, 'f, 'b, 'r> {
     }
 }
 
-impl<'a, 'f, 'b, 'r> AstVisitor for JsonSerializer<'a, 'f, 'b, 'r> {
+impl AstVisitor for JsonSerializer<'_, '_, '_, '_> {
     type ResultItem = ();
 
     fn visit_struct(&mut self, node: &Ast) -> Result<Self::ResultItem, Error> {
@@ -376,7 +376,7 @@ mod tests {
     const NESTED_DATA_SCHEMA: &str =
         "count:UINT8,fld1:{count}[sfld1:[ssfld1:{count}[count:UINT8,sssfld1:{count}[ssssfld1:\
         {count}[sssssfld1:UINT8,count:UINT8]]]]]";
-    const NESTED_DATA_BUF: &'static [u8] = &[
+    const NESTED_DATA_BUF: &[u8] = &[
         0x02, 0x02, 0x01, 0x01, 0x02, 0x02, 0x03, 0x03, 0x04, 0x04, 0x03, 0x01, 0x01, 0x02, 0x02,
         0x03, 0x03, 0x04, 0x04, 0x05, 0x05, 0x06, 0x06, 0x07, 0x07, 0x08, 0x08, 0x09, 0x09, 0x01,
         0x01, 0x01, 0x02, 0x01, 0x01, 0x02, 0x02, 0x03, 0x03, 0x04, 0x04,
@@ -564,7 +564,7 @@ mod tests {
         let schema = NESTED_DATA_SCHEMA.parse::<Schema>().unwrap();
         let actual = format!(
             "{}",
-            JsonDisplay::new(&schema, &NESTED_DATA_BUF, JsonFormattingStyle::Pretty)
+            JsonDisplay::new(&schema, NESTED_DATA_BUF, JsonFormattingStyle::Pretty)
         );
         let expected = NESTED_DATA_EXPECTED.to_string();
 

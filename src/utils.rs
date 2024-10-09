@@ -86,25 +86,23 @@ mod tests {
             json_escape_for_all_ascii_characters,
             0x00u8,
             0x80u8,
-            vec![
-                r##"\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\u000B\f\r\u000E\u000F"##,
+            [r##"\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\u000B\f\r\u000E\u000F"##,
                 r##"\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\u001B\u001C\u001D\u001E\u001F"##,
                 r##" !\"#$%&'()*+,-./0123456789:;<=>?"##,
                 r##"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"##,
-                r##"`abcdefghijklmnopqrstuvwxyz{|}~\u007F"##,
-            ]
+                r##"`abcdefghijklmnopqrstuvwxyz{|}~\u007F"##]
         ),
         (
             json_escape_with_no_escapes,
             0x61u8,
             0x7bu8,
-            vec![r##"abcdefghijklmnopqrstuvwxyz"##,]
+            [r##"abcdefghijklmnopqrstuvwxyz"##]
         ),
         (
             json_escape_for_string_to_be_escaped_from_the_middle,
             0x41u8,
             0x5eu8,
-            vec![r##"ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]"##,]
+            [r##"ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]"##]
         ),
     }
 }

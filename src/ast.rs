@@ -327,7 +327,7 @@ impl<'b> SchemaLexer<'b> {
     }
 }
 
-impl<'b> Iterator for SchemaLexer<'b> {
+impl Iterator for SchemaLexer<'_> {
     type Item = Result<Token, SchemaParseError>;
 
     fn next(&mut self) -> Option<Self::Item> {
