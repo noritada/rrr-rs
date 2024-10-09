@@ -47,69 +47,57 @@ fn app() -> Html {
     {
         let file_content = file_content.clone();
         let file = dropped_file.clone();
-        use_effect_with_deps(
-            move |_| {
-                if let Some(file) = file.as_ref() {
-                    let blob = Blob::from(file.deref().clone());
-                    wasm_bindgen_futures::spawn_local(async move {
-                        let result = read_as_bytes(&blob).await;
-                        if let Ok(bytes) = result {
-                            let mut reader = rrr::DataReader::new(
-                                std::io::Cursor::new(&bytes),
-                                rrr::DataReaderOptions::ENABLE_READING_BODY,
-                            );
-                            let triplet = reader.read();
-                            file_content.set(triplet.ok())
-                        }
-                    });
-                }
-            },
-            dropped_file,
-        );
+        use_effect_with(dropped_file, move |_| {
+            if let Some(file) = file.as_ref() {
+                let blob = Blob::from(file.deref().clone());
+                wasm_bindgen_futures::spawn_local(async move {
+                    let result = read_as_bytes(&blob).await;
+                    if let Ok(bytes) = result {
+                        let mut reader = rrr::DataReader::new(
+                            std::io::Cursor::new(&bytes),
+                            rrr::DataReaderOptions::ENABLE_READING_BODY,
+                        );
+                        let triplet = reader.read();
+                        file_content.set(triplet.ok())
+                    }
+                });
+            }
+        });
     }
 
     {
         let header_fields = header_fields.clone();
         let triplet = file_content.clone();
         let file_content = file_content.clone();
-        use_effect_with_deps(
-            move |_| {
-                if let Some((_, header, _)) = triplet.as_ref() {
-                    header_fields.set(Some(header::create_header_view(&header)));
-                }
-            },
-            file_content,
-        );
+        use_effect_with(file_content, move |_| {
+            if let Some((_, header, _)) = triplet.as_ref() {
+                header_fields.set(Some(header::create_header_view(&header)));
+            }
+        });
     }
 
     {
         let schema_tree = schema_tree.clone();
         let triplet = file_content.clone();
         let file_content = file_content.clone();
-        use_effect_with_deps(
-            move |_| {
-                if let Some((schema, _, _)) = triplet.as_ref() {
-                    schema_tree.set(tree::create_schema_tree(&schema.ast).ok());
-                }
-            },
-            file_content,
-        );
+        use_effect_with(file_content, move |_| {
+            if let Some((schema, _, _)) = triplet.as_ref() {
+                schema_tree.set(tree::create_schema_tree(&schema.ast).ok());
+            }
+        });
     }
 
     {
         let body_json = body_json.clone();
         let triplet = file_content.clone();
-        use_effect_with_deps(
-            move |_| {
-                if let Some((schema, _, body_buf)) = triplet.as_ref() {
-                    let json =
-                        rrr::JsonDisplay::new(schema, body_buf, rrr::JsonFormattingStyle::Pretty)
-                            .to_string();
-                    body_json.set(Some(json))
-                }
-            },
-            file_content,
-        );
+        use_effect_with(file_content, move |_| {
+            if let Some((schema, _, body_buf)) = triplet.as_ref() {
+                let json =
+                    rrr::JsonDisplay::new(schema, body_buf, rrr::JsonFormattingStyle::Pretty)
+                        .to_string();
+                body_json.set(Some(json))
+            }
+        });
     }
 
     let file_name = if file_name.is_empty() {
