@@ -24,6 +24,15 @@ impl DataReaderOptions {
     }
 }
 
+impl std::ops::BitOr for DataReaderOptions {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        let inner = self.0 | rhs.0;
+        Self(inner)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
