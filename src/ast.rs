@@ -1,6 +1,4 @@
-use std::str::FromStr;
-
-use crate::param::ParamStack;
+use crate::{param::ParamStack, DataReaderOptions};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Schema {
@@ -8,22 +6,15 @@ pub struct Schema {
     pub params: ParamStack,
 }
 
-impl TryFrom<&[u8]> for Schema {
+impl TryFrom<(&[u8], DataReaderOptions)> for Schema {
     type Error = crate::Error;
 
-    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-        let parser = SchemaParser::new(bytes);
+    fn try_from(value: (&[u8], DataReaderOptions)) -> Result<Self, Self::Error> {
+        let (bytes, options) = value;
+        let parser = SchemaParser::new(bytes, options);
         parser
             .parse()
             .map_err(|e| crate::Error::Schema(e, bytes.to_vec()))
-    }
-}
-
-impl FromStr for Schema {
-    type Err = crate::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        <Self>::try_from(s.as_bytes())
     }
 }
 
@@ -86,14 +77,16 @@ struct SchemaParser<'b> {
     lexer: std::iter::Peekable<SchemaLexer<'b>>,
     location: Location,
     params: ParamStack,
+    options: DataReaderOptions,
 }
 
 impl<'b> SchemaParser<'b> {
-    fn new(input: &'b [u8]) -> Self {
+    fn new(input: &'b [u8], options: DataReaderOptions) -> Self {
         Self {
             lexer: SchemaLexer::new(input).peekable(),
             location: Location(0, 0),
             params: ParamStack::new(),
+            options,
         }
     }
 
@@ -147,6 +140,20 @@ impl<'b> SchemaParser<'b> {
             // actually EOF has been captured in the previous block
             if self.next_token()?.kind != TokenKind::Comma {
                 return Err(self.err_unexpected_token());
+            }
+
+            if self
+                .options
+                .contains(DataReaderOptions::ALLOW_TRAILING_COMMA)
+                && matches!(
+                    self.lexer.peek(),
+                    None | Some(Ok(Token {
+                        kind: TokenKind::RBracket,
+                        ..
+                    }))
+                )
+            {
+                break;
             }
         }
 
@@ -460,7 +467,7 @@ mod tests {
     #[test]
     fn parse_single_field() {
         let input = "fld1:INT16";
-        let parser = SchemaParser::new(input.as_bytes());
+        let parser = SchemaParser::new(input.as_bytes(), DataReaderOptions::default());
         let actual = parser.parse();
         let expected_ast = Ast {
             name: "".to_owned(),
@@ -480,7 +487,7 @@ mod tests {
     #[test]
     fn parse_single_struct() {
         let input = "fld1:[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32]";
-        let parser = SchemaParser::new(input.as_bytes());
+        let parser = SchemaParser::new(input.as_bytes(), DataReaderOptions::default());
         let actual = parser.parse();
         let expected_ast = Ast {
             name: "".to_owned(),
@@ -513,7 +520,7 @@ mod tests {
     #[test]
     fn parse_nested_struct() {
         let input = "fld1:[sfld1:[ssfld1:<4>NSTR,ssfld2:STR,ssfld3:INT32]]";
-        let parser = SchemaParser::new(input.as_bytes());
+        let parser = SchemaParser::new(input.as_bytes(), DataReaderOptions::default());
         let actual = parser.parse();
         let expected_ast = Ast {
             name: "".to_owned(),
@@ -549,7 +556,7 @@ mod tests {
     #[test]
     fn parse_single_fixed_length_builtin_type_array() {
         let input = "fld1:{3}INT8";
-        let parser = SchemaParser::new(input.as_bytes());
+        let parser = SchemaParser::new(input.as_bytes(), DataReaderOptions::default());
         let actual = parser.parse();
         let expected_ast = Ast {
             name: "".to_owned(),
@@ -575,7 +582,7 @@ mod tests {
     #[test]
     fn parse_single_fixed_length_struct_array() {
         let input = "fld1:{3}[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32]";
-        let parser = SchemaParser::new(input.as_bytes());
+        let parser = SchemaParser::new(input.as_bytes(), DataReaderOptions::default());
         let actual = parser.parse();
         let expected_ast = Ast {
             name: "".to_owned(),
@@ -614,7 +621,7 @@ mod tests {
     #[test]
     fn parse_single_variable_length_struct_array() {
         let input = "fld1:INT8,fld2:{fld1}[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32]";
-        let parser = SchemaParser::new(input.as_bytes());
+        let parser = SchemaParser::new(input.as_bytes(), DataReaderOptions::default());
         let actual = parser.parse();
         let expected_ast = Ast {
             name: "".to_owned(),
@@ -662,7 +669,7 @@ mod tests {
     #[test]
     fn parse_single_unlimited_length_struct_array() {
         let input = "fld1:+[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32]";
-        let parser = SchemaParser::new(input.as_bytes());
+        let parser = SchemaParser::new(input.as_bytes(), DataReaderOptions::default());
         let actual = parser.parse();
         let expected_ast = Ast {
             name: "".to_owned(),
@@ -698,12 +705,52 @@ mod tests {
         assert_eq!(actual, expected);
     }
 
+    macro_rules! test_format_options_support {
+        ($(($name:ident, $input:expr, $options:expr, $success_expected:expr),)*) => ($(
+            #[test]
+            fn $name() {
+                let input = $input;
+                let parser = SchemaParser::new(input.as_bytes(), $options);
+                let succeeded = parser.parse().is_ok();
+
+                assert_eq!(succeeded, $success_expected);
+            }
+        )*);
+    }
+
+    test_format_options_support! {
+        (
+            trailing_comma_not_allowed,
+            "fld1:[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32,],",
+            DataReaderOptions::default(),
+            false
+        ),
+        (
+            trailing_comma_allowed,
+            "fld1:[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32,],",
+            DataReaderOptions::ALLOW_TRAILING_COMMA,
+            true
+        ),
+        (
+            multiple_trailing_commas_not_allowed_even_when_trailing_comma_is_allowed,
+            "fld1:[sfld1:<4>NSTR,sfld2:STR,sfld3:INT32,,],,",
+            DataReaderOptions::ALLOW_TRAILING_COMMA,
+            false
+        ),
+        (
+            double_commas_not_allowed_even_when_trailing_comma_is_allowed,
+            "fld1:[sfld1:<4>NSTR,sfld2:STR,,sfld3:INT32]",
+            DataReaderOptions::ALLOW_TRAILING_COMMA,
+            false
+        ),
+    }
+
     macro_rules! test_parse_errors {
         ($(($name:ident, $input:expr, $kind:ident, $start:expr, $end:expr),)*) => ($(
             #[test]
             fn $name() {
                 let input = $input;
-                let parser = SchemaParser::new(input.as_bytes());
+                let parser = SchemaParser::new(input.as_bytes(), DataReaderOptions::default());
                 let actual = parser.parse();
                 let expected = Err(SchemaParseError {
                     kind: SchemaParseErrorKind::$kind,

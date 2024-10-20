@@ -103,7 +103,7 @@ fn prettify_special_field_name(name: &str) -> &str {
 
 #[cfg(test)]
 mod tests {
-    use rrr::Schema;
+    use rrr::{DataReaderOptions, Schema};
 
     use super::*;
 
@@ -112,7 +112,8 @@ mod tests {
             #[test]
             fn $name() {
                 let input = $input;
-                let schema = input.parse::<Schema>().unwrap();
+                let options = DataReaderOptions::default();
+                let schema = Schema::try_from((input.as_bytes(), options)).unwrap();
                 let actual = create_schema_tree(&schema.ast).unwrap();
                 let expected = $expected;
 

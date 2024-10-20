@@ -345,14 +345,15 @@ impl IndentLevel {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::Schema;
+    use crate::{ast::Schema, DataReaderOptions};
 
     macro_rules! test_schema_oneline_display {
         ($(($name:ident, $schema:expr),)*) => ($(
             #[test]
             fn $name() {
                 let input = $schema;
-                let schema = input.parse::<Schema>().unwrap();
+                let options = DataReaderOptions::default();
+                let schema = Schema::try_from((input.as_bytes(), options)).unwrap();
                 let output = format!("{}", SchemaOnelineDisplay(&schema.ast));
 
                 assert_eq!(output, input);
@@ -527,7 +528,8 @@ mod tests {
         ($(($name:ident, $schema:expr, $buf:expr, $expected:expr),)*) => ($(
             #[test]
             fn $name() {
-                let schema = $schema.parse::<Schema>().unwrap();
+                let options = crate::DataReaderOptions::default();
+                let schema = Schema::try_from(($schema.as_bytes(), options)).unwrap();
                 let buf = $buf;
                 let actual = format!("{}", JsonDisplay::new(&schema, &buf, JsonFormattingStyle::Minimal));
                 let expected = $expected
@@ -561,7 +563,8 @@ mod tests {
 
     #[test]
     fn json_serialization_with_pretty_printing_style() {
-        let schema = NESTED_DATA_SCHEMA.parse::<Schema>().unwrap();
+        let options = crate::DataReaderOptions::default();
+        let schema = Schema::try_from((NESTED_DATA_SCHEMA.as_bytes(), options)).unwrap();
         let actual = format!(
             "{}",
             JsonDisplay::new(&schema, NESTED_DATA_BUF, JsonFormattingStyle::Pretty)

@@ -36,7 +36,7 @@ where
         let map = self.read_header_fields()?;
 
         let schema = map.get_required_field("format")?;
-        let schema: Schema = schema.as_slice().try_into()?;
+        let schema: Schema = (schema.as_slice(), self.options).try_into()?;
 
         let body = if self
             .options

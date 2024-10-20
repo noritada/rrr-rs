@@ -106,15 +106,17 @@ mod tests {
     };
 
     fn schema_without_str() -> Result<Schema, Error> {
+        let options = DataReaderOptions::default();
         let ast = "date:[year:UINT16,month:UINT8,day:UINT8],\
             data:{4}[loc:<4>NSTR,temp:INT16,rhum:UINT16],comment:<16>NSTR";
-        ast.parse()
+        Schema::try_from((ast.as_bytes(), options))
     }
 
     fn schema_with_str() -> Result<Schema, Error> {
+        let options = DataReaderOptions::default();
         let ast = "date:[year:UINT16,month:UINT8,day:UINT8],\
             data:{4}[loc:STR,temp:INT16,rhum:UINT16],comment:<16>NSTR";
-        ast.parse()
+        Schema::try_from((ast.as_bytes(), options))
     }
 
     #[test]

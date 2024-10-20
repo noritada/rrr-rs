@@ -1,6 +1,6 @@
 /// [`DataReaderOptions`] is a type representing the various flags of
 /// [`DataReader`](super::DataReader) and options as the union of those flags.
-#[derive(Debug, PartialEq, Eq, Default)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Default)]
 pub struct DataReaderOptions(u32);
 
 impl DataReaderOptions {
@@ -8,6 +8,8 @@ impl DataReaderOptions {
     pub const ENABLE_READING_BODY: Self = Self(1 << 1);
     /// Flag to ignore the value of `data_size` header field.
     pub const IGNORE_DATA_SIZE_FIELD: Self = Self(1 << 2);
+    /// Flag to allow a trailing comma in the `format` header field.
+    pub const ALLOW_TRAILING_COMMA: Self = Self(1 << 3);
 
     /// Returns the union of `self` and a `flag`.
     pub fn union(&self, flag: Self) -> Self {
