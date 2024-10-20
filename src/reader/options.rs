@@ -10,6 +10,9 @@ impl DataReaderOptions {
     pub const IGNORE_DATA_SIZE_FIELD: Self = Self(1 << 2);
     /// Flag to allow a trailing comma in the `format` header field.
     pub const ALLOW_TRAILING_COMMA: Self = Self(1 << 3);
+    /// Flag to allow an empty string to be used for a field name when there are
+    /// no other fields.
+    pub const ALLOW_EMPTY_FIELD_NAME: Self = Self(1 << 4);
 
     /// Returns the union of `self` and a `flag`.
     pub fn union(&self, flag: Self) -> Self {

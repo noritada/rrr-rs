@@ -91,7 +91,21 @@ impl<'b> SchemaParser<'b> {
     }
 
     fn parse(mut self) -> Result<Schema, SchemaParseError> {
-        let kind = self.parse_field_list()?;
+        let kind = if self
+            .options
+            .contains(DataReaderOptions::ALLOW_EMPTY_FIELD_NAME)
+            && matches!(
+                self.lexer.peek(),
+                Some(Ok(Token {
+                    kind: TokenKind::Colon,
+                    ..
+                }))
+            ) {
+            self.parse_field_with_empty_name()?
+        } else {
+            self.parse_field_list()?
+        };
+
         if let Some(result) = self.lexer.next() {
             // should be TokenKind::RBracket
             let token = result.unwrap();
@@ -107,6 +121,17 @@ impl<'b> SchemaParser<'b> {
             params: self.params,
         };
         Ok(schema)
+    }
+
+    fn parse_field_with_empty_name(&mut self) -> Result<AstKind, SchemaParseError> {
+        self.consume_symbol(TokenKind::Colon)?;
+
+        let kind = self.parse_type()?;
+        let name = String::new();
+        let member = Ast { kind, name };
+        let members = vec![member];
+        let kind = AstKind::Struct(members);
+        Ok(kind)
     }
 
     fn parse_field_list(&mut self) -> Result<AstKind, SchemaParseError> {
@@ -741,6 +766,30 @@ mod tests {
             double_commas_not_allowed_even_when_trailing_comma_is_allowed,
             "fld1:[sfld1:<4>NSTR,sfld2:STR,,sfld3:INT32]",
             DataReaderOptions::ALLOW_TRAILING_COMMA,
+            false
+        ),
+        (
+            empty_field_name_not_allowed,
+            ":+UINT8",
+            DataReaderOptions::default(),
+            false
+        ),
+        (
+            empty_field_name_allowed,
+            ":+UINT8",
+            DataReaderOptions::ALLOW_EMPTY_FIELD_NAME,
+            true
+        ),
+        (
+            empty_field_name_not_allowed_when_there_are_other_fields,
+            ":UINT8,fld1:INT8",
+            DataReaderOptions::ALLOW_EMPTY_FIELD_NAME,
+            false
+        ),
+        (
+            empty_field_name_not_allowed_when_trailing_comma_exists,
+            ":UINT8,",
+            DataReaderOptions::ALLOW_TRAILING_COMMA | DataReaderOptions::ALLOW_EMPTY_FIELD_NAME,
             false
         ),
     }
