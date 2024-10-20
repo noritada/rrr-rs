@@ -233,7 +233,12 @@ impl<'b> SchemaParser<'b> {
         self.consume_symbol(TokenKind::RAngleBracket)?;
 
         if let TokenKind::Ident(s) = self.next_token()?.kind {
-            if s.as_str() != "NSTR" {
+            if !(s.as_str() == "NSTR"
+                || (self
+                    .options
+                    .contains(DataReaderOptions::ALLOW_STR_INSTEAD_OF_NSTR)
+                    && s.as_str() == "STR"))
+            {
                 return Err(self.err_unexpected_token());
             }
         } else {
@@ -791,6 +796,18 @@ mod tests {
             ":UINT8,",
             DataReaderOptions::ALLOW_TRAILING_COMMA | DataReaderOptions::ALLOW_EMPTY_FIELD_NAME,
             false
+        ),
+        (
+            str_instead_of_nstr_not_allowed,
+            "fld1:<4>NSTR,fld2:<4>STR",
+            DataReaderOptions::default(),
+            false
+        ),
+        (
+            str_instead_of_nstr_allowed,
+            "fld1:<4>NSTR,fld2:<4>STR",
+            DataReaderOptions::ALLOW_STR_INSTEAD_OF_NSTR,
+            true
         ),
     }
 

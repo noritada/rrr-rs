@@ -13,6 +13,8 @@ impl DataReaderOptions {
     /// Flag to allow an empty string to be used for a field name when there are
     /// no other fields.
     pub const ALLOW_EMPTY_FIELD_NAME: Self = Self(1 << 4);
+    /// Flag to allow use of `<N>STR` instead of `<N>NSTR`.
+    pub const ALLOW_STR_INSTEAD_OF_NSTR: Self = Self(1 << 5);
 
     /// Returns the union of `self` and a `flag`.
     pub fn union(&self, flag: Self) -> Self {
