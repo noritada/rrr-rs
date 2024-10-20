@@ -9,7 +9,7 @@ mod walker;
 use std::borrow::Cow;
 
 pub use crate::{
-    ast::{Ast, AstKind, Len, Location, Schema, SchemaParseError, SchemaParseErrorKind},
+    ast::{parse, Ast, AstKind, Len, Location, Schema, SchemaParseError, SchemaParseErrorKind},
     reader::{DataReader, DataReaderOptions},
     utils::json_escape_str,
     visitor::{AstVisitor, JsonDisplay, JsonFormattingStyle, SchemaOnelineDisplay},
@@ -100,7 +100,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        ast::{Schema, Size},
+        ast::{parse, Schema, Size},
         value::{Number, Value, ValueTree},
         walker::BufWalker,
     };
@@ -109,14 +109,14 @@ mod tests {
         let options = DataReaderOptions::default();
         let ast = "date:[year:UINT16,month:UINT8,day:UINT8],\
             data:{4}[loc:<4>NSTR,temp:INT16,rhum:UINT16],comment:<16>NSTR";
-        Schema::try_from((ast.as_bytes(), options))
+        parse(ast.as_bytes(), options)
     }
 
     fn schema_with_str() -> Result<Schema, Error> {
         let options = DataReaderOptions::default();
         let ast = "date:[year:UINT16,month:UINT8,day:UINT8],\
             data:{4}[loc:STR,temp:INT16,rhum:UINT16],comment:<16>NSTR";
-        Schema::try_from((ast.as_bytes(), options))
+        parse(ast.as_bytes(), options)
     }
 
     #[test]

@@ -1,21 +1,16 @@
 use crate::{param::ParamStack, DataReaderOptions};
 
+pub fn parse(bytes: &[u8], options: DataReaderOptions) -> Result<Schema, crate::Error> {
+    let parser = SchemaParser::new(bytes, options);
+    parser
+        .parse()
+        .map_err(|e| crate::Error::Schema(e, bytes.to_vec()))
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct Schema {
     pub ast: Ast,
     pub params: ParamStack,
-}
-
-impl TryFrom<(&[u8], DataReaderOptions)> for Schema {
-    type Error = crate::Error;
-
-    fn try_from(value: (&[u8], DataReaderOptions)) -> Result<Self, Self::Error> {
-        let (bytes, options) = value;
-        let parser = SchemaParser::new(bytes, options);
-        parser
-            .parse()
-            .map_err(|e| crate::Error::Schema(e, bytes.to_vec()))
-    }
 }
 
 #[derive(Debug, PartialEq, Eq)]

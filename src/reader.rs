@@ -6,7 +6,10 @@ use std::{
 use flate2::read::GzDecoder;
 pub use options::DataReaderOptions;
 
-use crate::{ast::Schema, Error};
+use crate::{
+    ast::{parse, Schema},
+    Error,
+};
 
 mod options;
 
@@ -36,7 +39,7 @@ where
         let map = self.read_header_fields()?;
 
         let schema = map.get_required_field("format")?;
-        let schema: Schema = (schema.as_slice(), self.options).try_into()?;
+        let schema = parse(schema.as_slice(), self.options)?;
 
         let body = if self
             .options
