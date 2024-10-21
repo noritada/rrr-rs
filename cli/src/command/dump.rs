@@ -17,7 +17,10 @@ pub(crate) fn cli() -> Command {
 
 pub(crate) async fn exec(args: &ArgMatches) -> Result<()> {
     let fname = args.get_one::<String>("PATH_OR_URI").unwrap();
-    let options = DataReaderOptions::ENABLE_READING_BODY;
+    let options = DataReaderOptions::ALLOW_TRAILING_COMMA
+        | DataReaderOptions::ALLOW_EMPTY_FIELD_NAME
+        | DataReaderOptions::ALLOW_STR_INSTEAD_OF_NSTR
+        | DataReaderOptions::ENABLE_READING_BODY;
     let options = if args.get_flag("ignore-size") {
         options.union(DataReaderOptions::IGNORE_DATA_SIZE_FIELD)
     } else {

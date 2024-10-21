@@ -2,6 +2,7 @@ use std::ops::Deref;
 
 use drop_area::FileDropArea;
 use gloo_file::{futures::read_as_bytes, Blob};
+use rrr::DataReaderOptions;
 use yew::prelude::*;
 
 mod drop_area;
@@ -55,7 +56,10 @@ fn app() -> Html {
                     if let Ok(bytes) = result {
                         let mut reader = rrr::DataReader::new(
                             std::io::Cursor::new(&bytes),
-                            rrr::DataReaderOptions::ENABLE_READING_BODY,
+                            DataReaderOptions::ALLOW_TRAILING_COMMA
+                                | DataReaderOptions::ALLOW_EMPTY_FIELD_NAME
+                                | DataReaderOptions::ALLOW_STR_INSTEAD_OF_NSTR
+                                | DataReaderOptions::ENABLE_READING_BODY,
                         );
                         let triplet = reader.read();
                         file_content.set(triplet.ok())
