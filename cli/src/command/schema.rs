@@ -23,7 +23,9 @@ pub(crate) fn cli() -> Command {
 pub(crate) async fn exec(args: &ArgMatches) -> Result<()> {
     let fname = args.get_one::<String>("PATH_OR_URI").unwrap();
     let n_bytes = args.get_one::<usize>("N").unwrap();
-    let options = DataReaderOptions::default();
+    let options = DataReaderOptions::ALLOW_TRAILING_COMMA
+        | DataReaderOptions::ALLOW_EMPTY_FIELD_NAME
+        | DataReaderOptions::ALLOW_STR_INSTEAD_OF_NSTR;
     let (schema, _, _) = read_from_source(fname, Some(n_bytes), options).await?;
 
     if args.get_flag("tree") {

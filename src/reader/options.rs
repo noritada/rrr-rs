@@ -1,6 +1,6 @@
 /// [`DataReaderOptions`] is a type representing the various flags of
 /// [`DataReader`](super::DataReader) and options as the union of those flags.
-#[derive(Debug, PartialEq, Eq, Default)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Default)]
 pub struct DataReaderOptions(u32);
 
 impl DataReaderOptions {
@@ -8,6 +8,13 @@ impl DataReaderOptions {
     pub const ENABLE_READING_BODY: Self = Self(1 << 1);
     /// Flag to ignore the value of `data_size` header field.
     pub const IGNORE_DATA_SIZE_FIELD: Self = Self(1 << 2);
+    /// Flag to allow a trailing comma in the `format` header field.
+    pub const ALLOW_TRAILING_COMMA: Self = Self(1 << 3);
+    /// Flag to allow an empty string to be used for a field name when there are
+    /// no other fields.
+    pub const ALLOW_EMPTY_FIELD_NAME: Self = Self(1 << 4);
+    /// Flag to allow use of `<N>STR` instead of `<N>NSTR`.
+    pub const ALLOW_STR_INSTEAD_OF_NSTR: Self = Self(1 << 5);
 
     /// Returns the union of `self` and a `flag`.
     pub fn union(&self, flag: Self) -> Self {
@@ -21,6 +28,15 @@ impl DataReaderOptions {
         let Self(self_) = self;
         let Self(flag) = flag;
         self_ & flag != 0
+    }
+}
+
+impl std::ops::BitOr for DataReaderOptions {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        let inner = self.0 | rhs.0;
+        Self(inner)
     }
 }
 
